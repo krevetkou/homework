@@ -10,7 +10,7 @@ import (
 )
 
 type BirthDate struct {
-	Date, Month, Year string
+	Date, Month, Year int
 }
 
 type Quote struct {
@@ -18,18 +18,21 @@ type Quote struct {
 	Length int
 }
 
-type Writer struct {
+type PersonData struct {
 	Name      string
 	BirthDate BirthDate
-	Genre     string
-	Quote     Quote
+}
+
+type Writer struct {
+	PersonData
+	Genre string
+	Quote
 }
 
 type Politician struct {
-	Name      string
-	BirthDate BirthDate
-	JobTitle  string
-	Quote     Quote
+	PersonData
+	JobTitle string
+	Quote
 }
 
 func main() {
@@ -58,18 +61,18 @@ func main() {
 			s := strings.Split(scan, ",")
 			b := strings.Split(s[1], ".")
 			writers[wCount].Name = s[0]
-			writers[wCount].BirthDate.Date = b[0]
-			writers[wCount].BirthDate.Month = b[1]
-			writers[wCount].BirthDate.Year = b[2]
+			writers[wCount].BirthDate.Date, _ = strconv.Atoi(b[0])
+			writers[wCount].BirthDate.Month, _ = strconv.Atoi(b[1])
+			writers[wCount].BirthDate.Year, _ = strconv.Atoi(b[2])
 			writers[wCount].Genre = s[2]
 			wCount++
 		case count == 2 || count == 6:
 			s := strings.Split(scan, ",")
 			b := strings.Split(s[1], ".")
 			politicians[pCount].Name = s[0]
-			politicians[pCount].BirthDate.Date = b[0]
-			politicians[pCount].BirthDate.Month = b[1]
-			politicians[pCount].BirthDate.Year = b[2]
+			politicians[pCount].BirthDate.Date, _ = strconv.Atoi(b[0])
+			politicians[pCount].BirthDate.Month, _ = strconv.Atoi(b[1])
+			politicians[pCount].BirthDate.Year, _ = strconv.Atoi(b[2])
 			politicians[pCount].JobTitle = s[2]
 			pCount++
 		case wCount < 4 && (count == 1 || count == 5 || count == 9):
