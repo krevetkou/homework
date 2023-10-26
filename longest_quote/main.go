@@ -10,7 +10,7 @@ import (
 )
 
 type BirthDate struct {
-	Date, Month, Year int
+	Date, Month, Year string
 }
 
 type Quote struct {
@@ -21,26 +21,20 @@ type Quote struct {
 type PersonData struct {
 	Name      string
 	BirthDate BirthDate
+	Quote
 }
 
 type Writer struct {
 	PersonData
 	Genre string
-	Quote
 }
 
 type Politician struct {
 	PersonData
 	JobTitle string
-	Quote
 }
 
 func main() {
-	var writers [3]Writer
-	var politicians [2]Politician
-
-	count, wCount, pCount := 0, 0, 0
-
 	file, err := os.Open("quotes.txt")
 	if err != nil {
 		return
@@ -54,41 +48,32 @@ func main() {
 	}(file)
 
 	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		scan := scanner.Text()
-		switch {
-		case count == 0 || count == 4 || count == 8:
-			s := strings.Split(scan, ",")
-			b := strings.Split(s[1], ".")
-			writers[wCount].Name = s[0]
-			writers[wCount].BirthDate.Date, _ = strconv.Atoi(b[0])
-			writers[wCount].BirthDate.Month, _ = strconv.Atoi(b[1])
-			writers[wCount].BirthDate.Year, _ = strconv.Atoi(b[2])
-			writers[wCount].Genre = s[2]
-			wCount++
-		case count == 2 || count == 6:
-			s := strings.Split(scan, ",")
-			b := strings.Split(s[1], ".")
-			politicians[pCount].Name = s[0]
-			politicians[pCount].BirthDate.Date, _ = strconv.Atoi(b[0])
-			politicians[pCount].BirthDate.Month, _ = strconv.Atoi(b[1])
-			politicians[pCount].BirthDate.Year, _ = strconv.Atoi(b[2])
-			politicians[pCount].JobTitle = s[2]
-			pCount++
-		case wCount < 4 && (count == 1 || count == 5 || count == 9):
-			writers[wCount-1].Quote.Text = scan
-			writers[wCount-1].Quote.Length = utf8.RuneCountInString(scan)
-		case pCount < 3 && (count == 3 || count == 7):
-			politicians[pCount-1].Quote.Text = scan
-			politicians[pCount-1].Quote.Length = utf8.RuneCountInString(scan)
-		}
-		count++
-	}
+	writers, politicians := vars(scanner)
 
 	if err := scanner.Err(); err != nil {
 		return
 	}
 
+	maximum, author := max(writers, politicians)
+
+	fmt.Println("Самая длинная цитата принадлежит " + author + "ее длина составляет " + strconv.Itoa(maximum))
+}
+
+func (b *BirthDate) setBirthDate(data string) {
+	s := strings.Split(data, ".")
+
+	b.Date = s[0]
+	b.Month = s[1]
+	b.Year = s[2]
+
+}
+
+func (q *Quote) setQuote(data string) {
+	q.Text = data
+	q.Length = utf8.RuneCountInString(data)
+}
+
+func max(writers []Writer, politicians []Politician) (int, string) {
 	aMax := writers[0].Quote.Length
 	author := writers[0].Name
 
@@ -106,5 +91,52 @@ func main() {
 		}
 	}
 
-	fmt.Println("Самая длинная цитата принадлежит " + author + "ее длина составляет " + strconv.Itoa(aMax))
+	return aMax, author
+}
+
+func vars(scanner *bufio.Scanner) ([]Writer, []Politician) {
+	var writers []Writer
+	var politicians []Politician
+
+	count, wCount, pCount := 0, 0, 0
+	for scanner.Scan() {
+		scan := scanner.Text()
+		switch {
+		case count%4 == 0:
+			s := strings.Split(scan, ",")
+
+			writers = append(writers, Writer{
+				PersonData: PersonData{
+					Name: s[0],
+
+					Quote: Quote{},
+				},
+				Genre: s[2],
+			})
+			writers[wCount].BirthDate.setBirthDate(s[1])
+
+			wCount++
+		case (count-2)%4 == 0:
+			s := strings.Split(scan, ",")
+
+			politicians = append(politicians, Politician{
+				PersonData: PersonData{
+					Name:  s[0],
+					Quote: Quote{},
+				},
+				JobTitle: s[2],
+			})
+
+			politicians[pCount].BirthDate.setBirthDate(s[1])
+
+			pCount++
+		case (count-1)%4 == 0 && wCount < count || count == 1:
+			writers[wCount-1].Quote.setQuote(scan)
+		case (count-3)%4 == 0 && pCount < count || count == 3:
+			politicians[pCount-1].Quote.setQuote(scan)
+		}
+		count++
+	}
+
+	return writers, politicians
 }
