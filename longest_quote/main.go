@@ -10,7 +10,7 @@ import (
 )
 
 type BirthDate struct {
-	Date, Month, Year string
+	Date, Month, Year uint
 }
 
 type Quote struct {
@@ -19,8 +19,8 @@ type Quote struct {
 }
 
 type PersonData struct {
-	Name      string
-	BirthDate BirthDate
+	Name string
+	BirthDate
 	Quote
 }
 
@@ -59,18 +59,27 @@ func main() {
 	fmt.Println("Самая длинная цитата принадлежит " + author + "ее длина составляет " + strconv.Itoa(maximum))
 }
 
-func (b *BirthDate) setBirthDate(data string) {
+func (p *PersonData) setBirthDate(data string) {
 	s := strings.Split(data, ".")
 
-	b.Date = s[0]
-	b.Month = s[1]
-	b.Year = s[2]
+	if len(s) == 3 {
+		x, _ := strconv.Atoi(s[0])
+		y, _ := strconv.Atoi(s[1])
+		z, _ := strconv.Atoi(s[2])
 
+		p.Date = uint(x)
+		p.Month = uint(y)
+		p.Year = uint(z)
+	} else {
+		p.Date = 0
+		p.Month = 0
+		p.Year = 0
+	}
 }
 
-func (q *Quote) setQuote(data string) {
-	q.Text = data
-	q.Length = utf8.RuneCountInString(data)
+func (p *PersonData) setQuote(data string) {
+	p.Text = data
+	p.Length = utf8.RuneCountInString(data)
 }
 
 func max(writers []Writer, politicians []Politician) (int, string) {
@@ -97,43 +106,44 @@ func max(writers []Writer, politicians []Politician) (int, string) {
 func vars(scanner *bufio.Scanner) ([]Writer, []Politician) {
 	var writers []Writer
 	var politicians []Politician
+	isWriter := true
 
 	count, wCount, pCount := 0, 0, 0
 	for scanner.Scan() {
 		scan := scanner.Text()
 		switch {
-		case count%4 == 0:
+		case isWriter == true && count%2 == 0:
 			s := strings.Split(scan, ",")
 
 			writers = append(writers, Writer{
 				PersonData: PersonData{
 					Name: s[0],
-
-					Quote: Quote{},
 				},
 				Genre: s[2],
 			})
-			writers[wCount].BirthDate.setBirthDate(s[1])
+			writers[wCount].setBirthDate(s[1])
 
 			wCount++
-		case (count-2)%4 == 0:
+
+		case isWriter == false && count%2 == 0:
 			s := strings.Split(scan, ",")
 
 			politicians = append(politicians, Politician{
 				PersonData: PersonData{
-					Name:  s[0],
-					Quote: Quote{},
+					Name: s[0],
 				},
 				JobTitle: s[2],
 			})
 
-			politicians[pCount].BirthDate.setBirthDate(s[1])
+			politicians[pCount].setBirthDate(s[1])
 
 			pCount++
-		case (count-1)%4 == 0 && wCount < count || count == 1:
-			writers[wCount-1].Quote.setQuote(scan)
-		case (count-3)%4 == 0 && pCount < count || count == 3:
-			politicians[pCount-1].Quote.setQuote(scan)
+		case isWriter == true && wCount < count || count == 1:
+			writers[wCount-1].setQuote(scan)
+			isWriter = !isWriter
+		case isWriter == false && pCount < count || count == 3:
+			politicians[pCount-1].setQuote(scan)
+			isWriter = !isWriter
 		}
 		count++
 	}
