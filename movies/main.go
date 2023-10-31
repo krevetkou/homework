@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"fmt"
 	"io"
 	"os"
 	"strings"
@@ -36,9 +35,7 @@ func (m Movies) addMovie(text string) {
 	movie := strings.Split(text, " m ")
 	movie = strings.Split(movie[1], " a ") // [0] - movie, [1] - actor
 
-	if _, ok := m[movie[0]]; ok {
-		m[movie[0]] = append(m[movie[0]])
-	} else {
+	if _, ok := m[movie[0]]; !ok {
 		m[movie[0]] = []string{}
 	}
 
@@ -51,8 +48,6 @@ func (m Movies) removeActorOrMovie(text string) {
 	actors := m[movieAndActor[0]]
 	i := 0
 
-	fmt.Println(movieAndActor)
-
 	if len(movieAndActor) == 1 {
 		delete(m, movieAndActor[0])
 	} else {
@@ -64,6 +59,7 @@ func (m Movies) removeActorOrMovie(text string) {
 		}
 
 		actors[i] = actors[len(actors)-1]
+		actors[len(actors)-1] = ""
 		actors = actors[:len(actors)-1]
 	}
 }
