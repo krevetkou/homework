@@ -36,7 +36,7 @@ func (m Movies) addMovie(text string) {
 	movie := strings.Split(text, " m ")
 	movie = strings.Split(movie[1], " a ") // [0] - movie, [1] - actor
 
-	if _, ok := m["foo"]; !ok {
+	if _, ok := m[movie[0]]; ok {
 		m[movie[0]] = append(m[movie[0]])
 	} else {
 		m[movie[0]] = []string{}
