@@ -2,12 +2,15 @@ package main
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 	"os"
 	"strings"
 )
 
 type Movies map[string][]string
+
+const dir = "moviesDB"
 
 func main() {
 	movies := Movies{}
@@ -32,70 +35,126 @@ func main() {
 }
 
 func (m Movies) addMovie(text string) {
-	movie := strings.Split(text, " m ")
-	movie = strings.Split(movie[1], " a ") // [0] - movie, [1] - actor
+	movieAndActor, err := checkErrorsAfterSplit(text)
 
-	if _, ok := m[movie[0]]; !ok {
-		m[movie[0]] = []string{}
+	if err != 0 {
+		return
 	}
 
-	m[movie[0]] = append(m[movie[0]], movie[1])
+	movie := movieAndActor[0]
+	actor := movieAndActor[1]
+
+	if _, ok := m[movie]; !ok {
+		m[movie] = []string{}
+	}
+
+	m[movie] = append(m[movie], actor)
 }
 
 func (m Movies) removeActorOrMovie(text string) {
-	movieAndActor := strings.Split(text, " m ")
-	movieAndActor = strings.Split(movieAndActor[1], " a ") // [0] - movie, [1] - actor
-	actors := m[movieAndActor[0]]
+	movieAndActor, err := checkErrorsAfterSplit(text)
+
+	if err != 0 {
+		return
+	}
+
+	movie := movieAndActor[0]
+	actor := movieAndActor[1]
+
+	actors := m[movie]
 	i := 0
 
 	if len(movieAndActor) == 1 {
-		delete(m, movieAndActor[0])
-	} else {
-		for ind, val := range actors {
-			if val == movieAndActor[1] {
-				i = ind
-				break
-			}
-		}
-
-		actors[i] = actors[len(actors)-1]
-		actors[len(actors)-1] = ""
-		actors = actors[:len(actors)-1]
+		delete(m, movie)
+		return
 	}
+
+	for ind, val := range actors {
+		if val == actor {
+			i = ind
+			break
+		}
+	}
+
+	remove(actors, i)
 }
 
 func (m Movies) saveMovie(text string) {
-	err := os.Mkdir("moviesDB", 0755)
+	_, err := exists(dir)
 	if err != nil {
-		os.Exit(0)
+		return
 	}
 
-	movie := strings.Split(text, " m ") // [1] - movie
-
-	if len(movie) > 1 {
-		save(movie[1], m[movie[1]])
-	} else {
-		for ind, val := range m {
-			save(ind, val)
-		}
+	_, err = os.Create(dir)
+	if err != nil {
+		return
 	}
+
+	movies := strings.Split(text, " m ") // [1] - movie
+	movie := movies[1]
+
+	if len(movies) > 1 {
+		save(movie, m[movie])
+		return
+	}
+	for ind, val := range m {
+		save(ind, val)
+	}
+
 }
 
 func save(movie string, actors []string) {
-	txt := "moviesDB/" + movie
+	_, err := exists(dir + "/" + movie)
+	if err != nil {
+		return
+	}
+
+	txt := dir + "/" + movie
 	file, err := os.Create(txt)
 	if err != nil {
-		os.Exit(1)
+		return
 	}
 	defer func(file *os.File) {
 		err = file.Close()
 		if err != nil {
-
+			return
 		}
 	}(file)
 
 	_, err = io.WriteString(file, strings.Join(actors, ", "))
 	if err != nil {
-		os.Exit(1)
+		return
 	}
+}
+
+func checkErrorsAfterSplit(text string) ([]string, int) {
+	movieAndActor := strings.Split(text, " m ")
+	err := 0
+	if len(movieAndActor) != 2 {
+		fmt.Printf("Вы не ввели, какой фильм и актера необходимо добавить %s\n", movieAndActor)
+		err = 1
+	}
+
+	movieAndActor = strings.Split(movieAndActor[1], " a ")
+	if len(movieAndActor) != 2 {
+		fmt.Printf("Вы не ввели либо фильм, либо актера, которого необходимо добавить %s\n", movieAndActor)
+		err = 1
+	}
+
+	return movieAndActor, err
+}
+
+func remove(slice []string, s int) []string {
+	return append(slice[:s], slice[s+1:]...)
+}
+
+func exists(path string) (bool, error) {
+	_, err := os.Stat(path)
+	if err == nil {
+		return true, nil
+	}
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	return false, err
 }
