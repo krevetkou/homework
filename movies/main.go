@@ -4,8 +4,10 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"strings"
+	"sync"
 )
 
 type Movies map[string][]string
@@ -27,6 +29,8 @@ func main() {
 			movies.removeActorOrMovie(txt)
 		case "dump":
 			movies.saveMovie(txt)
+		case "load":
+			movies.loadMovie(txt)
 		case "exit":
 			os.Exit(0)
 		}
@@ -35,9 +39,17 @@ func main() {
 }
 
 func (m Movies) addMovie(text string) {
-	movieAndActor, err := checkErrorsAfterSplit(text)
+	movieAndActor := strings.Split(text, " m ")
+	if len(movieAndActor) != 2 {
+		fmt.Printf("Вы не ввели, какой фильм и актера необходимо добавить %s\n", movieAndActor)
+		log.Println("not enough arguments")
+		return
+	}
 
-	if err != 0 {
+	movieAndActor = strings.Split(movieAndActor[1], " a ")
+	if len(movieAndActor) != 2 {
+		fmt.Printf("Вы не ввели либо фильм, либо актера, которого необходимо добавить %s\n", movieAndActor)
+		log.Println("not enough arguments")
 		return
 	}
 
@@ -49,99 +61,144 @@ func (m Movies) addMovie(text string) {
 	}
 
 	m[movie] = append(m[movie], actor)
+
+	log.Println(actor + " was added to movie " + movie)
 }
 
 func (m Movies) removeActorOrMovie(text string) {
-	movieAndActor, err := checkErrorsAfterSplit(text)
-
-	if err != 0 {
+	movieAndActor := strings.Split(text, " m ")
+	if len(movieAndActor) != 2 {
+		fmt.Printf("Вы не ввели, какой фильм и актера необходимо добавить %s\n", movieAndActor)
+		log.Println("not enough arguments")
 		return
 	}
 
+	movieAndActor = strings.Split(movieAndActor[1], " a ")
 	movie := movieAndActor[0]
+
+	if len(movieAndActor) != 2 {
+		delete(m, movie)
+
+		log.Println(movie + " was deleted")
+		return
+	}
+
 	actor := movieAndActor[1]
 
-	actors := m[movie]
 	i := 0
 
 	if len(movieAndActor) == 1 {
 		delete(m, movie)
+
+		log.Println(movie + " was deleted")
 		return
 	}
 
-	for ind, val := range actors {
+	for ind, val := range m[movie] {
 		if val == actor {
 			i = ind
 			break
 		}
 	}
 
-	remove(actors, i)
+	remove(m[movie], i)
+
+	log.Println(actor + " was deleted from " + movie)
 }
 
 func (m Movies) saveMovie(text string) {
-	_, err := exists(dir)
+	dirExists, err := exists(dir)
 	if err != nil {
 		return
 	}
 
-	_, err = os.Create(dir)
-	if err != nil {
-		return
+	if !dirExists {
+		err = os.Mkdir(dir, 0777)
+		if err != nil {
+			return
+		}
 	}
 
-	movies := strings.Split(text, " m ") // [1] - movie
-	movie := movies[1]
+	movies := strings.Split(text, " ") // [1] - movie
 
 	if len(movies) > 1 {
+		movie := movies[1]
 		save(movie, m[movie])
 		return
 	}
+
 	for ind, val := range m {
 		save(ind, val)
 	}
 
 }
 
-func save(movie string, actors []string) {
-	_, err := exists(dir + "/" + movie)
-	if err != nil {
+func (m Movies) loadMovie(text string) {
+	directory := strings.Split(text, " d ")
+	if len(directory) != 2 {
+		fmt.Printf("Вы не ввели директорию %s\n", directory)
+		log.Println("not enough arguments")
 		return
 	}
 
-	txt := dir + "/" + movie
-	file, err := os.Create(txt)
+	entries, err := os.ReadDir("./" + directory[1])
 	if err != nil {
+		log.Println("can't read files from directory " + directory[1])
 		return
 	}
-	defer func(file *os.File) {
-		err = file.Close()
-		if err != nil {
-			return
-		}
-	}(file)
 
-	_, err = io.WriteString(file, strings.Join(actors, ", "))
-	if err != nil {
-		return
+	wg := sync.WaitGroup{}
+	mu := sync.Mutex{}
+
+	for _, e := range entries {
+		log.Println("file " + e.Name())
+
+		wg.Add(1)
+
+		go func(e os.DirEntry) {
+			defer wg.Done()
+			file, err := os.ReadFile("./" + directory[1] + "/" + e.Name())
+			if err != nil {
+				log.Println("can't open file")
+				return
+			}
+			name := strings.Split(e.Name(), ".")
+
+			mu.Lock()
+			m[name[0]] = append(m[name[0]], string(file))
+			mu.Unlock()
+		}(e)
+		wg.Wait()
 	}
 }
 
-func checkErrorsAfterSplit(text string) ([]string, int) {
-	movieAndActor := strings.Split(text, " m ")
-	err := 0
-	if len(movieAndActor) != 2 {
-		fmt.Printf("Вы не ввели, какой фильм и актера необходимо добавить %s\n", movieAndActor)
-		err = 1
+func save(movie string, actors []string) {
+	path := dir + "/" + movie + ".txt"
+
+	exist, err := exists(path)
+	if err != nil {
+		return
 	}
 
-	movieAndActor = strings.Split(movieAndActor[1], " a ")
-	if len(movieAndActor) != 2 {
-		fmt.Printf("Вы не ввели либо фильм, либо актера, которого необходимо добавить %s\n", movieAndActor)
-		err = 1
-	}
+	if !exist {
+		file, err := os.Create(path)
+		if err != nil {
+			return
+		}
+		defer func(file *os.File) {
+			err = file.Close()
+			if err != nil {
+				return
+			}
+		}(file)
 
-	return movieAndActor, err
+		_, err = io.WriteString(file, strings.Join(actors, ", "))
+		if err != nil {
+			return
+		}
+
+		log.Println(movie + " was saved")
+	}
 }
 
 func remove(slice []string, s int) []string {
