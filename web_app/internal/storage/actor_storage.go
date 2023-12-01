@@ -8,17 +8,21 @@ import (
 	"strings"
 )
 
-type ActorsStorage struct {
-	actors []domain.Actor
+type Storage struct {
+	actors        []domain.Actor
+	movies        []domain.Movie
+	actorsByMovie map[int][]int
 }
 
-func NewActorStorage() *ActorsStorage {
-	return &ActorsStorage{
-		actors: make([]domain.Actor, 0),
+func NewStorage() *Storage {
+	return &Storage{
+		actors:        make([]domain.Actor, 0),
+		movies:        make([]domain.Movie, 0),
+		actorsByMovie: make(map[int][]int),
 	}
 }
 
-func (s *ActorsStorage) Insert(actor domain.Actor) domain.Actor {
+func (s *Storage) InsertActor(actor domain.Actor) domain.Actor {
 	var lastID int
 	if len(s.actors) > 0 {
 		lastID = s.actors[len(s.actors)-1:][0].ID
@@ -30,7 +34,7 @@ func (s *ActorsStorage) Insert(actor domain.Actor) domain.Actor {
 	return actor
 }
 
-func (s *ActorsStorage) IsActorExists(actor domain.Actor) bool {
+func (s *Storage) IsActorExists(actor domain.Actor) bool {
 	for i := range s.actors {
 		if strings.Contains(s.actors[i].Name, actor.Name) &&
 			strings.Contains(s.actors[i].Gender, actor.Gender) &&
@@ -43,7 +47,7 @@ func (s *ActorsStorage) IsActorExists(actor domain.Actor) bool {
 	return false
 }
 
-func (s *ActorsStorage) GetByID(id int) (domain.Actor, error) {
+func (s *Storage) GetActorByID(id int) (domain.Actor, error) {
 	var actor *domain.Actor
 	for i := range s.actors {
 		if s.actors[i].ID == id {
@@ -58,13 +62,13 @@ func (s *ActorsStorage) GetByID(id int) (domain.Actor, error) {
 	return *actor, nil
 }
 
-func (s *ActorsStorage) Delete(id int) {
+func (s *Storage) DeleteActor(id int) {
 	s.actors = slices.DeleteFunc(s.actors, func(l1 domain.Actor) bool {
 		return l1.ID == id
 	})
 }
 
-func (s *ActorsStorage) Update(actorUpdate domain.Actor) {
+func (s *Storage) UpdateActor(actorUpdate domain.Actor) {
 	for i := range s.actors {
 		if s.actors[i].ID == actorUpdate.ID {
 			s.actors[i] = actorUpdate
@@ -72,11 +76,11 @@ func (s *ActorsStorage) Update(actorUpdate domain.Actor) {
 	}
 }
 
-func (s *ActorsStorage) GetAll() []domain.Actor {
+func (s *Storage) GetAllActor() []domain.Actor {
 	return s.actors
 }
 
-func (s *ActorsStorage) SortAndOrderBy(sortBy, orderBy string, actors []domain.Actor) []domain.Actor {
+func (s *Storage) SortAndOrderByActor(sortBy, orderBy string, actors []domain.Actor) []domain.Actor {
 	switch {
 	case sortBy == "name":
 		if orderBy == "" || orderBy == "asc" {

@@ -2,22 +2,14 @@ package storage
 
 import (
 	"arch-demo/internal/domain"
+	"errors"
+	"fmt"
 	"slices"
 	"sort"
 	"strings"
 )
 
-type MoviesStorage struct {
-	movies []domain.Movie
-}
-
-func NewMovieStorage() *MoviesStorage {
-	return &MoviesStorage{
-		movies: make([]domain.Movie, 0),
-	}
-}
-
-func (s *MoviesStorage) Insert(actor domain.Movie) domain.Movie {
+func (s *Storage) InsertMovie(actor domain.Movie) domain.Movie {
 	var lastID int
 	if len(s.movies) > 0 {
 		lastID = s.movies[len(s.movies)-1:][0].ID
@@ -29,7 +21,7 @@ func (s *MoviesStorage) Insert(actor domain.Movie) domain.Movie {
 	return actor
 }
 
-func (s *MoviesStorage) IsMovieExists(movie domain.Movie) bool {
+func (s *Storage) IsMovieExists(movie domain.Movie) bool {
 	for i := range s.movies {
 		if strings.Contains(s.movies[i].Name, movie.Name) &&
 			s.movies[i].ReleaseDate == movie.ReleaseDate &&
@@ -43,7 +35,7 @@ func (s *MoviesStorage) IsMovieExists(movie domain.Movie) bool {
 	return false
 }
 
-func (s *MoviesStorage) GetByID(id int) (domain.Movie, error) {
+func (s *Storage) GetMovieByID(id int) (domain.Movie, error) {
 	var movie *domain.Movie
 	for i := range s.movies {
 		if s.movies[i].ID == id {
@@ -58,7 +50,7 @@ func (s *MoviesStorage) GetByID(id int) (domain.Movie, error) {
 	return *movie, nil
 }
 
-func (s *MoviesStorage) Update(movieUpdate domain.Movie) {
+func (s *Storage) UpdateMovie(movieUpdate domain.Movie) {
 	for i := range s.movies {
 		if s.movies[i].ID == movieUpdate.ID {
 			s.movies[i] = movieUpdate
@@ -66,17 +58,17 @@ func (s *MoviesStorage) Update(movieUpdate domain.Movie) {
 	}
 }
 
-func (s *MoviesStorage) Delete(id int) {
+func (s *Storage) DeleteMovie(id int) {
 	s.movies = slices.DeleteFunc(s.movies, func(l1 domain.Movie) bool {
 		return l1.ID == id
 	})
 }
 
-func (s *MoviesStorage) GetAll() []domain.Movie {
+func (s *Storage) GetAllMovies() []domain.Movie {
 	return s.movies
 }
 
-func (s *MoviesStorage) SortAndOrderBy(sortBy, orderBy string, movies []domain.Movie) []domain.Movie {
+func (s *Storage) SortAndOrderByMovie(sortBy, orderBy string, movies []domain.Movie) []domain.Movie {
 	switch {
 	case sortBy == "name" || sortBy == "":
 		if orderBy == "" || orderBy == "asc" {
@@ -125,4 +117,36 @@ func (s *MoviesStorage) SortAndOrderBy(sortBy, orderBy string, movies []domain.M
 	}
 
 	return movies
+}
+
+func (s *Storage) GetActorsByMovie(id int) []domain.Actor {
+	var actors []domain.Actor
+	actorsIDs := s.actorsByMovie[id]
+	for _, val := range actorsIDs {
+		actorExists := slices.ContainsFunc(s.actors, func(actor domain.Actor) bool {
+			return actor.ID == val
+		})
+		if actorExists {
+			actor, _ := s.GetActorByID(val) //!!
+			actors = append(actors, actor)
+		}
+	}
+
+	return actors
+}
+
+func (s *Storage) CreateActorsByMovie(id int, actors []int) error {
+	_, err := s.GetMovieByID(id)
+	switch {
+	case errors.Is(err, domain.ErrNotFound):
+		return err
+	case err != nil:
+		return fmt.Errorf("unexpected error %w", err)
+	}
+
+	//check if all actors exist
+
+	s.actorsByMovie[id] = actors
+
+	return nil
 }

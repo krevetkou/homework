@@ -15,6 +15,8 @@ type MoviesRepository interface {
 	Delete(id int)
 	GetAll() []domain.Movie
 	SortAndOrderBy(sortBy, orderBy string, movies []domain.Movie) []domain.Movie
+	GetActorsByMovie(id int) []domain.Actor
+	CreateActorsByMovie(id int, actors []int) error
 }
 
 type MoviesService struct {
@@ -27,7 +29,7 @@ func NewMovieService(storage MoviesRepository) MoviesService {
 	}
 }
 
-func (s MoviesService) Create(movie domain.Movie) (domain.Movie, error) {
+func (s *MoviesService) Create(movie domain.Movie) (domain.Movie, error) {
 	// входящие параметры необходимо валидировать
 	if movie.Name == "" || movie.ReleaseDate.Date == 0 || movie.ReleaseDate.Month == 0 || movie.ReleaseDate.Year == 0 ||
 		movie.Country == "" || movie.Genre == "" || movie.Rating == 0 {
@@ -44,7 +46,7 @@ func (s MoviesService) Create(movie domain.Movie) (domain.Movie, error) {
 	return newMovie, nil
 }
 
-func (s MoviesService) Get(id int) (domain.Movie, error) {
+func (s *MoviesService) Get(id int) (domain.Movie, error) {
 	movie, err := s.Storage.GetByID(id)
 	if errors.Is(err, domain.ErrNotFound) {
 		return domain.Movie{}, err
@@ -57,7 +59,7 @@ func (s MoviesService) Get(id int) (domain.Movie, error) {
 	return movie, nil
 }
 
-func (s MoviesService) Update(id int, movieUpdate domain.MovieUpdate) (domain.Movie, error) {
+func (s *MoviesService) Update(id int, movieUpdate domain.MovieUpdate) (domain.Movie, error) {
 	movie, err := s.Storage.GetByID(id)
 	if errors.Is(err, domain.ErrNotFound) {
 		return domain.Movie{}, err
@@ -88,7 +90,7 @@ func (s MoviesService) Update(id int, movieUpdate domain.MovieUpdate) (domain.Mo
 	return movie, nil
 }
 
-func (s MoviesService) Delete(id int) error {
+func (s *MoviesService) Delete(id int) error {
 	_, err := s.Storage.GetByID(id)
 	if errors.Is(err, domain.ErrNotFound) {
 		return fmt.Errorf("movie id: %d, err: %w", id, err)
@@ -103,7 +105,7 @@ func (s MoviesService) Delete(id int) error {
 	return nil
 }
 
-func (s MoviesService) List(orderBy, sortBy, nameQuery, genreQuery string) []domain.Movie {
+func (s *MoviesService) List(orderBy, sortBy, nameQuery, genreQuery string) []domain.Movie {
 	movies := s.Storage.GetAll()
 	var filteredMovies []domain.Movie
 
@@ -131,4 +133,27 @@ func (s MoviesService) List(orderBy, sortBy, nameQuery, genreQuery string) []dom
 	}
 
 	return movies
+}
+
+func (s *MoviesService) GetActorsByMovie(id int) []domain.Actor {
+	actors := s.Storage.GetActorsByMovie(id) //add error
+	//if errors.Is(err, domain.ErrNotFound) {
+	////	return domain.Movie{}, err
+	////}
+	//
+	//if err != nil {
+	//	return domain.Movie{}, fmt.Errorf("failed to find movie, unexpected error: %w", err)
+	//}
+
+	return actors
+}
+
+func (s *MoviesService) CreateActorsForMovie(id int, actorsByMovie []int) error {
+	err := s.Storage.CreateActorsByMovie(id, actorsByMovie)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

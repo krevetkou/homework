@@ -1,7 +1,7 @@
 package api
 
 import (
-	domain2 "arch-demo/internal/domain"
+	"arch-demo/internal/domain"
 	"encoding/json"
 	"errors"
 	"github.com/go-chi/chi/v5"
@@ -12,11 +12,13 @@ import (
 )
 
 type MoviesService interface {
-	Create(actor domain2.Movie) (domain2.Movie, error)
-	Get(id int) (domain2.Movie, error)
+	Create(actor domain.Movie) (domain.Movie, error)
+	Get(id int) (domain.Movie, error)
 	Delete(id int) error
-	Update(id int, actorUpdate domain2.MovieUpdate) (domain2.Movie, error)
-	List(orderBy, sortBy, nameQuery, genreQuery string) []domain2.Movie
+	Update(id int, actorUpdate domain.MovieUpdate) (domain.Movie, error)
+	List(orderBy, sortBy, nameQuery, genreQuery string) []domain.Movie
+	GetActorsByMovie(id int) []domain.Actor
+	CreateActorsForMovie(id int, actorsByMovie []int) error
 }
 
 type MoviesHandler struct {
@@ -64,7 +66,7 @@ func (h MoviesHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var newMovie domain2.Movie
+	var newMovie domain.Movie
 	err = json.Unmarshal(body, &newMovie)
 	if err != nil {
 		http.Error(w, "failed to unmarshall data", http.StatusBadRequest)
@@ -75,9 +77,9 @@ func (h MoviesHandler) Create(w http.ResponseWriter, r *http.Request) {
 	createdMovie, err := h.Service.Create(newMovie)
 	if err != nil {
 		switch {
-		case errors.Is(err, domain2.ErrFieldsRequired):
+		case errors.Is(err, domain.ErrFieldsRequired):
 			http.Error(w, "all required fields must have values", http.StatusUnprocessableEntity)
-		case errors.Is(err, domain2.ErrExists):
+		case errors.Is(err, domain.ErrExists):
 			http.Error(w, "movie already exists", http.StatusConflict)
 		default:
 			http.Error(w, "unexpected error", http.StatusInternalServerError)
@@ -121,7 +123,7 @@ func (h MoviesHandler) Get(w http.ResponseWriter, r *http.Request) {
 	movie, err := h.Service.Get(id)
 	if err != nil {
 		switch {
-		case errors.Is(err, domain2.ErrNotFound):
+		case errors.Is(err, domain.ErrNotFound):
 			http.Error(w, "actor not found", http.StatusNotFound)
 		default:
 			http.Error(w, "unexpected error", http.StatusInternalServerError)
@@ -160,7 +162,7 @@ func (h MoviesHandler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// более короткая и удобная запись вместо io.ReadAll
-	var movieUpdate domain2.MovieUpdate
+	var movieUpdate domain.MovieUpdate
 	err = json.NewDecoder(r.Body).Decode(&movieUpdate)
 	if err != nil {
 		log.Println(err)
@@ -171,7 +173,7 @@ func (h MoviesHandler) Update(w http.ResponseWriter, r *http.Request) {
 	updatedMovie, err := h.Service.Update(id, movieUpdate)
 	if err != nil {
 		switch {
-		case errors.Is(err, domain2.ErrNotFound):
+		case errors.Is(err, domain.ErrNotFound):
 			http.Error(w, "movie not found", http.StatusNotFound)
 		default:
 			http.Error(w, "unexpected error", http.StatusInternalServerError)
@@ -212,7 +214,7 @@ func (h MoviesHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	err = h.Service.Delete(id)
 	if err != nil {
 		switch {
-		case errors.Is(err, domain2.ErrNotFound):
+		case errors.Is(err, domain.ErrNotFound):
 			http.Error(w, "movie not found", http.StatusNotFound)
 		default:
 			http.Error(w, "unexpected error", http.StatusInternalServerError)
@@ -223,4 +225,98 @@ func (h MoviesHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusAccepted)
+}
+
+func (h MoviesHandler) GetActors(w http.ResponseWriter, r *http.Request) {
+	idParam := chi.URLParam(r, "id")
+	if idParam == "" {
+		log.Println("id required")
+		http.Error(w, "id required", http.StatusBadRequest)
+		return
+	}
+
+	id, err := strconv.Atoi(idParam)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, "failed to parse id query param", http.StatusBadRequest)
+		return
+	}
+
+	actorsByMovie := h.Service.GetActorsByMovie(id)
+
+	//movie, err := h.Service.Get(id)
+	//if err != nil {
+	//	switch {
+	//	case errors.Is(err, domain.ErrNotFound):
+	//		http.Error(w, "actor not found", http.StatusNotFound)
+	//	default:
+	//		http.Error(w, "unexpected error", http.StatusInternalServerError)
+	//	}
+	//
+	//	log.Println(err)
+	//	return
+	//}
+	//
+	data, err := json.Marshal(actorsByMovie)
+	if err != nil {
+		http.Error(w, "failed to create response data", http.StatusInternalServerError)
+	}
+
+	// если не передать content-type, то клиент воспримет контент как text/plain, а не json
+	w.Header().Add("Content-Type", "application/json")
+	_, err = w.Write(data)
+	if err != nil {
+		return
+	}
+}
+
+func (h MoviesHandler) CreateActorsForMovie(w http.ResponseWriter, r *http.Request) {
+	if r.Header.Get("Content-Type") != "application/json" {
+		http.Error(w, "content type not allowed", http.StatusUnsupportedMediaType)
+		return
+	}
+
+	idParam := chi.URLParam(r, "id")
+	if idParam == "" {
+		log.Println("id required")
+		http.Error(w, "id required", http.StatusBadRequest)
+		return
+	}
+
+	id, err := strconv.Atoi(idParam)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, "failed to parse id query param", http.StatusBadRequest)
+		return
+	}
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "failed to read request body", http.StatusBadRequest)
+		log.Println(err)
+		return
+	}
+
+	var actorsByMovie []int
+	err = json.Unmarshal(body, &actorsByMovie)
+	if err != nil {
+		http.Error(w, "failed to unmarshall data", http.StatusBadRequest)
+		log.Println(err)
+		return
+	}
+
+	err = h.Service.CreateActorsForMovie(id, actorsByMovie)
+	if err != nil {
+		switch {
+		case errors.Is(err, domain.ErrNotFound):
+			http.Error(w, "movie not found", http.StatusNotFound)
+		default:
+			http.Error(w, "unexpected error", http.StatusInternalServerError)
+		}
+		log.Println(err)
+
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
 }

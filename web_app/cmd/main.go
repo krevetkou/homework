@@ -12,12 +12,10 @@ import (
 )
 
 func main() {
-	actorsStorage := storage2.NewActorStorage()
-	actorsService := services2.NewActorService(actorsStorage)
+	storage := storage2.NewStorage()
+	actorsService := services2.NewActorService(storage)
 	actorsHandler := api2.NewActorsHandler(actorsService)
-
-	moviesStorage := storage2.NewMovieStorage()
-	moviesService := services2.NewMovieService(moviesStorage)
+	moviesService := services2.NewMovieService(storage)
 	moviesHandler := api2.NewLaptopsHandler(moviesService)
 
 	actors := []domain2.Actor{
@@ -93,7 +91,7 @@ func main() {
 	}
 
 	for _, val := range actors {
-		actorsStorage.Insert(val)
+		actorsStorage.InsertActor(val)
 	}
 
 	r := chi.NewRouter()
@@ -117,10 +115,18 @@ func main() {
 				r.Get("/", moviesHandler.Get)
 				r.Patch("/", moviesHandler.Update)
 				r.Delete("/", moviesHandler.Delete)
+				r.Route("/actors", func(r chi.Router) {
+					r.Get("/", moviesHandler.GetActors)
+					r.Post("/", moviesHandler.CreateActorsForMovie)
+				})
 			})
+
 		})
 
 	})
+
+	//POST /movies/{movie_id}/actors - добавление в фильм списка актеров - в теле запроса необходимо передать массив id актеров
+	//GET /movies/{movie_id}/actors - получение списка актеров в фильме, возвращается полная информация о всех актерах
 
 	err := http.ListenAndServe(":8080", r)
 	if errors.Is(err, http.ErrServerClosed) {
