@@ -4,14 +4,14 @@ package domain
 type Actor struct {
 	ID             int    `json:"id"`
 	Name           string `json:"name"`
-	BirthYear      string `json:"birth_year"`
+	BirthYear      int    `json:"birth_year"`
 	CountryOfBirth string `json:"country_of_birth"`
-	Sex            string `json:"sex"`
+	Gender         string `json:"gender"`
 }
 
 type ActorUpdate struct {
 	Name           *string `json:"name,omitempty"`
-	BirthYear      *string `json:"birth_year,omitempty"`
+	BirthYear      *int    `json:"birth_year,omitempty"`
 	CountryOfBirth *string `json:"country_of_birth,omitempty"`
 	Sex            *string `json:"sex,omitempty"`
 }

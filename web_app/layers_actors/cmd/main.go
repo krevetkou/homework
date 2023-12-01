@@ -2,6 +2,7 @@ package main
 
 import (
 	"arch-demo/layers_actors/internal/api"
+	"arch-demo/layers_actors/internal/domain"
 	"arch-demo/layers_actors/internal/services"
 	"arch-demo/layers_actors/internal/storage"
 	"errors"
@@ -15,11 +16,33 @@ func main() {
 	actorsService := services.NewActorService(actorsStorage)
 	actorsHandler := api.NewActorsHandler(actorsService)
 
-	//POST /actors - добавление нового актера
-	//PATCH /actors/{id} - частичное обновление актера, можно обновить любое значение
-	//DELETE /actors/{id} - удаление актера по id
-	//GET /actors/{id} - получение одного актера по id
-	//GET /actors - получение списка актеров, добавить возможность фильтровать по имени актера и стране рождения с помощью query параметров /actors?name и /actors?country. Добавить возможность упорядочить вывод по имени, стране и году рождения с помощью query параметра /actors?order="name", /actors?order="country" /actors?order="birthdate". Добавить возможность отсортировать вывод в порядке убывания или возростания с помощью query параметра /actors?sort="asc" , /actors?sort="desc"
+	actors := []domain.Actor{
+		{
+			Name:           "Lol",
+			BirthYear:      1909,
+			CountryOfBirth: "Sos",
+			Gender:         "female",
+		}, {
+			Name:           "Kek",
+			BirthYear:      2012,
+			CountryOfBirth: "Lock",
+			Gender:         "male",
+		}, {
+			Name:           "Cheburek",
+			BirthYear:      900,
+			CountryOfBirth: "Klkd",
+			Gender:         "elephant",
+		}, {
+			Name:           "Holk",
+			BirthYear:      2765,
+			CountryOfBirth: "Dada",
+			Gender:         "fox",
+		},
+	}
+
+	for _, val := range actors {
+		actorsStorage.Insert(val)
+	}
 
 	r := chi.NewRouter()
 	r.Route("/actors", func(r chi.Router) {

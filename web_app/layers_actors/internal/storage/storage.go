@@ -4,6 +4,7 @@ import (
 	"arch-demo/layers_actors/internal/domain"
 	"golang.org/x/exp/slices"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -32,8 +33,8 @@ func (s *ActorsStorage) Insert(actor domain.Actor) domain.Actor {
 func (s *ActorsStorage) IsActorExists(actor domain.Actor) bool {
 	for i := range s.actors {
 		if strings.Contains(s.actors[i].Name, actor.Name) &&
-			strings.Contains(s.actors[i].Sex, actor.Sex) &&
-			strings.Contains(s.actors[i].BirthYear, actor.BirthYear) &&
+			strings.Contains(s.actors[i].Gender, actor.Gender) &&
+			strings.Contains(strconv.Itoa(s.actors[i].BirthYear), strconv.Itoa(actor.BirthYear)) &&
 			strings.Contains(s.actors[i].CountryOfBirth, actor.CountryOfBirth) {
 			return true
 		}
@@ -75,60 +76,41 @@ func (s *ActorsStorage) GetAll() []domain.Actor {
 	return s.actors
 }
 
-func (s *ActorsStorage) OrderBy(param string) []domain.Actor {
-	var filteredActors []domain.Actor
+func (s *ActorsStorage) SortAndOrderBy(sortBy, orderBy string) []domain.Actor {
+	actors := s.GetAll()
 
 	switch {
-	case param == "name":
-		names := make([]string, 0, len(s.actors))
-
-		for _, val := range s.actors {
-			names = append(names, val.Name)
+	case sortBy == "name":
+		if orderBy == "" || orderBy == "asc" {
+			sort.Slice(actors, func(i, j int) bool {
+				return actors[i].Name < actors[j].Name
+			})
+		} else {
+			sort.Slice(actors, func(i, j int) bool {
+				return actors[i].Name > actors[j].Name
+			})
 		}
-		sort.Strings(names)
-
-		for _, valName := range names {
-			for _, valActor := range s.actors {
-				if valActor.Name == valName {
-					filteredActors = append(filteredActors, valActor)
-					break
-				}
-			}
+	case sortBy == "country":
+		if orderBy == "" || orderBy == "asc" {
+			sort.Slice(actors, func(i, j int) bool {
+				return actors[i].CountryOfBirth < actors[j].CountryOfBirth
+			})
+		} else {
+			sort.Slice(actors, func(i, j int) bool {
+				return actors[i].CountryOfBirth > actors[j].CountryOfBirth
+			})
 		}
-
-	case param == "country":
-		countries := make([]string, 0, len(s.actors))
-
-		for _, val := range s.actors {
-			countries = append(countries, val.CountryOfBirth)
-		}
-		sort.Strings(countries)
-
-		for _, valCountry := range countries {
-			for _, valActor := range s.actors {
-				if valActor.CountryOfBirth == valCountry {
-					filteredActors = append(filteredActors, valActor)
-					break
-				}
-			}
-		}
-	case param == "birthdate":
-		birthDates := make([]string, 0, len(s.actors))
-
-		for _, val := range s.actors {
-			birthDates = append(birthDates, val.BirthYear)
-		}
-		sort.Strings(birthDates)
-
-		for _, valBirthDate := range birthDates {
-			for _, valActor := range s.actors {
-				if valActor.BirthYear == valBirthDate {
-					filteredActors = append(filteredActors, valActor)
-					break
-				}
-			}
+	case sortBy == "birthdate":
+		if orderBy == "" || orderBy == "asc" {
+			sort.Slice(actors, func(i, j int) bool {
+				return actors[i].BirthYear < actors[j].BirthYear
+			})
+		} else {
+			sort.Slice(actors, func(i, j int) bool {
+				return actors[i].BirthYear > actors[j].BirthYear
+			})
 		}
 	}
 
-	return filteredActors
+	return actors
 }

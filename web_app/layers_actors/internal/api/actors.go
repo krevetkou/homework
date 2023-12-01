@@ -16,7 +16,7 @@ type ActorsService interface {
 	Get(id int) (domain.Actor, error)
 	Delete(id int) error
 	Update(id int, actorUpdate domain.ActorUpdate) (domain.Actor, error)
-	List(name, countryOfBirth, orderBy string) []domain.Actor
+	List(sortBy, orderBy, nameQuery, countryOfBirthQuery string) []domain.Actor
 }
 
 type ActorsHandler struct {
@@ -83,16 +83,13 @@ func (h ActorsHandler) Create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h ActorsHandler) List(w http.ResponseWriter, r *http.Request) {
-	NameQuery := r.URL.Query().Get("name")
-	CountryOfBirthQuery := r.URL.Query().Get("country_of_birth")
-
+	SortBy := r.URL.Query().Get("sort")
 	OrderBy := r.URL.Query().Get("order")
-	if OrderBy == "" {
-		OrderBy = "id"
-	}
+	NameQuery := r.URL.Query().Get("name")
+	CountryOfBirthQuery := r.URL.Query().Get("country")
 
-	filteredLaptops := h.Service.List(NameQuery, CountryOfBirthQuery, OrderBy)
-	data, err := json.Marshal(filteredLaptops)
+	filteredActors := h.Service.List(SortBy, OrderBy, NameQuery, CountryOfBirthQuery)
+	data, err := json.Marshal(filteredActors)
 	if err != nil {
 		log.Println(err)
 		http.Error(w, "failed to create response data", http.StatusInternalServerError)

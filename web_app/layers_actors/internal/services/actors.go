@@ -4,7 +4,6 @@ import (
 	"arch-demo/layers_actors/internal/domain"
 	"errors"
 	"fmt"
-	"log"
 	"strings"
 )
 
@@ -15,7 +14,7 @@ type ActorsRepository interface {
 	Delete(id int)
 	Update(actor domain.Actor)
 	GetAll() []domain.Actor
-	OrderBy(param string) []domain.Actor
+	SortAndOrderBy(sortBy, orderBy string) []domain.Actor
 }
 
 type ActorsService struct {
@@ -30,7 +29,7 @@ func NewActorService(storage ActorsRepository) ActorsService {
 
 func (s ActorsService) Create(actor domain.Actor) (domain.Actor, error) {
 	// входящие параметры необходимо валидировать
-	if actor.Name == "" || actor.Sex == "" || actor.BirthYear == "" || actor.CountryOfBirth == "" {
+	if actor.Name == "" || actor.Gender == "" || actor.BirthYear == 0 || actor.CountryOfBirth == "" {
 		return domain.Actor{}, domain.ErrFieldsRequired
 	}
 
@@ -76,7 +75,7 @@ func (s ActorsService) Update(id int, actorUpdate domain.ActorUpdate) (domain.Ac
 	}
 
 	if actorUpdate.Sex != nil {
-		actor.Sex = *actorUpdate.Sex
+		actor.Gender = *actorUpdate.Sex
 	}
 
 	s.Storage.Update(actor)
@@ -99,26 +98,30 @@ func (s ActorsService) Delete(id int) error {
 	return nil
 }
 
-func (s ActorsService) List(name, countryOfBirth, orderBy string) []domain.Actor {
+func (s ActorsService) List(sortBy, orderBy, nameQuery, countryOfBirthQuery string) []domain.Actor {
 	actors := s.Storage.GetAll()
-	if name == "" && countryOfBirth == "" && orderBy == "" {
-		return actors
-	}
-
 	var filteredActors []domain.Actor
 
-	if orderBy != "" {
-		filteredActors = s.Storage.OrderBy(orderBy)
+	if nameQuery != "" || countryOfBirthQuery != "" {
+		for i := range actors {
+			if (strings.Contains(actors[i].Name, nameQuery)) ||
+				(strings.Contains(actors[i].CountryOfBirth, countryOfBirthQuery)) {
+				filteredActors = append(filteredActors, actors[i])
+			}
+		}
 		return filteredActors
 	}
 
-	for i := range actors {
-		if (name != "" && strings.Contains(actors[i].Name, name)) ||
-			(countryOfBirth != "" && strings.Contains(actors[i].CountryOfBirth, countryOfBirth)) {
-			filteredActors = append(filteredActors, actors[i])
-			log.Println(countryOfBirth)
-		}
+	switch {
+	case sortBy == "" && orderBy == "":
+		actors = s.Storage.SortAndOrderBy("name", "asc")
+	case sortBy == "" && orderBy != "":
+		actors = s.Storage.SortAndOrderBy("name", orderBy)
+	case sortBy != "" && orderBy == "":
+		actors = s.Storage.SortAndOrderBy(sortBy, "asc")
+	default:
+		actors = s.Storage.SortAndOrderBy(sortBy, orderBy)
 	}
 
-	return filteredActors
+	return actors
 }
