@@ -1,7 +1,7 @@
 package api
 
 import (
-	"arch-demo/layers_actors/internal/domain"
+	"arch-demo/internal/domain"
 	"encoding/json"
 	"errors"
 	"github.com/go-chi/chi/v5"
@@ -56,7 +56,7 @@ func (h ActorsHandler) Create(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case errors.Is(err, domain.ErrFieldsRequired):
 			http.Error(w, "all required fields must have values", http.StatusUnprocessableEntity)
-		case errors.Is(err, domain.ErrActorExists):
+		case errors.Is(err, domain.ErrExists):
 			http.Error(w, "actor already exists", http.StatusConflict)
 		default:
 			http.Error(w, "unexpected error", http.StatusInternalServerError)

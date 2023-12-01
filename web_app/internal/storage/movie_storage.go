@@ -1,7 +1,7 @@
 package storage
 
 import (
-	"arch-demo/layers_movies/internal/domain"
+	"arch-demo/internal/domain"
 	"slices"
 	"sort"
 	"strings"
@@ -76,9 +76,7 @@ func (s *MoviesStorage) GetAll() []domain.Movie {
 	return s.movies
 }
 
-func (s *MoviesStorage) SortAndOrderBy(sortBy, orderBy string) []domain.Movie {
-	movies := s.GetAll()
-
+func (s *MoviesStorage) SortAndOrderBy(sortBy, orderBy string, movies []domain.Movie) []domain.Movie {
 	switch {
 	case sortBy == "name" || sortBy == "":
 		if orderBy == "" || orderBy == "asc" {

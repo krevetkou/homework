@@ -1,7 +1,7 @@
 package storage
 
 import (
-	"arch-demo/layers_actors/internal/domain"
+	"arch-demo/internal/domain"
 	"golang.org/x/exp/slices"
 	"sort"
 	"strconv"
@@ -76,9 +76,7 @@ func (s *ActorsStorage) GetAll() []domain.Actor {
 	return s.actors
 }
 
-func (s *ActorsStorage) SortAndOrderBy(sortBy, orderBy string) []domain.Actor {
-	actors := s.GetAll()
-
+func (s *ActorsStorage) SortAndOrderBy(sortBy, orderBy string, actors []domain.Actor) []domain.Actor {
 	switch {
 	case sortBy == "name":
 		if orderBy == "" || orderBy == "asc" {

@@ -1,7 +1,7 @@
 package services
 
 import (
-	"arch-demo/layers_movies/internal/domain"
+	"arch-demo/internal/domain"
 	"errors"
 	"fmt"
 	"strings"
@@ -14,7 +14,7 @@ type MoviesRepository interface {
 	Update(actor domain.Movie)
 	Delete(id int)
 	GetAll() []domain.Movie
-	SortAndOrderBy(sortBy, orderBy string) []domain.Movie
+	SortAndOrderBy(sortBy, orderBy string, movies []domain.Movie) []domain.Movie
 }
 
 type MoviesService struct {
@@ -36,7 +36,7 @@ func (s MoviesService) Create(movie domain.Movie) (domain.Movie, error) {
 
 	isMovieExist := s.Storage.IsMovieExists(movie)
 	if isMovieExist {
-		return domain.Movie{}, domain.ErrMovieExists
+		return domain.Movie{}, domain.ErrExists
 	}
 
 	newMovie := s.Storage.Insert(movie)
@@ -109,23 +109,25 @@ func (s MoviesService) List(orderBy, sortBy, nameQuery, genreQuery string) []dom
 
 	if nameQuery != "" || genreQuery != "" {
 		for i := range movies {
-			if (strings.Contains(movies[i].Name, nameQuery)) ||
-				(strings.Contains(movies[i].Genre, genreQuery)) {
+			if (nameQuery != "" && strings.Contains(movies[i].Name, nameQuery)) ||
+				(genreQuery != "" && strings.Contains(movies[i].Genre, genreQuery)) {
 				filteredMovies = append(filteredMovies, movies[i])
 			}
 		}
-		return filteredMovies
+
+	} else {
+		filteredMovies = movies
 	}
 
 	switch {
 	case sortBy == "" && orderBy == "":
-		movies = s.Storage.SortAndOrderBy("name", "asc")
+		movies = s.Storage.SortAndOrderBy("name", "asc", filteredMovies)
 	case sortBy == "" && orderBy != "":
-		movies = s.Storage.SortAndOrderBy("name", orderBy)
+		movies = s.Storage.SortAndOrderBy("name", orderBy, filteredMovies)
 	case sortBy != "" && orderBy == "":
-		movies = s.Storage.SortAndOrderBy(sortBy, "asc")
+		movies = s.Storage.SortAndOrderBy(sortBy, "asc", filteredMovies)
 	default:
-		movies = s.Storage.SortAndOrderBy(sortBy, orderBy)
+		movies = s.Storage.SortAndOrderBy(sortBy, orderBy, filteredMovies)
 	}
 
 	return movies

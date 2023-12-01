@@ -1,7 +1,7 @@
 package services
 
 import (
-	"arch-demo/layers_actors/internal/domain"
+	"arch-demo/internal/domain"
 	"errors"
 	"fmt"
 	"strings"
@@ -14,7 +14,7 @@ type ActorsRepository interface {
 	Delete(id int)
 	Update(actor domain.Actor)
 	GetAll() []domain.Actor
-	SortAndOrderBy(sortBy, orderBy string) []domain.Actor
+	SortAndOrderBy(sortBy, orderBy string, actors []domain.Actor) []domain.Actor
 }
 
 type ActorsService struct {
@@ -35,7 +35,7 @@ func (s ActorsService) Create(actor domain.Actor) (domain.Actor, error) {
 
 	isActorExist := s.Storage.IsActorExists(actor)
 	if isActorExist {
-		return domain.Actor{}, domain.ErrActorExists
+		return domain.Actor{}, domain.ErrExists
 	}
 
 	newActor := s.Storage.Insert(actor)
@@ -104,23 +104,24 @@ func (s ActorsService) List(sortBy, orderBy, nameQuery, countryOfBirthQuery stri
 
 	if nameQuery != "" || countryOfBirthQuery != "" {
 		for i := range actors {
-			if (strings.Contains(actors[i].Name, nameQuery)) ||
-				(strings.Contains(actors[i].CountryOfBirth, countryOfBirthQuery)) {
+			if (nameQuery != "" && strings.Contains(actors[i].Name, nameQuery)) ||
+				(countryOfBirthQuery != "" && strings.Contains(actors[i].CountryOfBirth, countryOfBirthQuery)) {
 				filteredActors = append(filteredActors, actors[i])
 			}
 		}
-		return filteredActors
+	} else {
+		filteredActors = actors
 	}
 
 	switch {
 	case sortBy == "" && orderBy == "":
-		actors = s.Storage.SortAndOrderBy("name", "asc")
+		actors = s.Storage.SortAndOrderBy("name", "asc", filteredActors)
 	case sortBy == "" && orderBy != "":
-		actors = s.Storage.SortAndOrderBy("name", orderBy)
+		actors = s.Storage.SortAndOrderBy("name", orderBy, filteredActors)
 	case sortBy != "" && orderBy == "":
-		actors = s.Storage.SortAndOrderBy(sortBy, "asc")
+		actors = s.Storage.SortAndOrderBy(sortBy, "asc", filteredActors)
 	default:
-		actors = s.Storage.SortAndOrderBy(sortBy, orderBy)
+		actors = s.Storage.SortAndOrderBy(sortBy, orderBy, filteredActors)
 	}
 
 	return actors
