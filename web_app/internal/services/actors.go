@@ -8,13 +8,13 @@ import (
 )
 
 type ActorsRepository interface {
-	Insert(actor domain.Actor) domain.Actor
+	InsertActor(actor domain.Actor) domain.Actor
 	IsActorExists(actor domain.Actor) bool
-	GetByID(id int) (domain.Actor, error)
-	Delete(id int)
-	Update(actor domain.Actor)
-	GetAll() []domain.Actor
-	SortAndOrderBy(sortBy, orderBy string, actors []domain.Actor) []domain.Actor
+	GetActorByID(id int) (domain.Actor, error)
+	DeleteActor(id int)
+	UpdateActor(actor domain.Actor)
+	GetAllActor() []domain.Actor
+	SortAndOrderByActor(sortBy, orderBy string, actors []domain.Actor) []domain.Actor
 }
 
 type ActorsService struct {
@@ -38,13 +38,13 @@ func (s ActorsService) Create(actor domain.Actor) (domain.Actor, error) {
 		return domain.Actor{}, domain.ErrExists
 	}
 
-	newActor := s.Storage.Insert(actor)
+	newActor := s.Storage.InsertActor(actor)
 
 	return newActor, nil
 }
 
 func (s ActorsService) Get(id int) (domain.Actor, error) {
-	actor, err := s.Storage.GetByID(id)
+	actor, err := s.Storage.GetActorByID(id)
 	if errors.Is(err, domain.ErrNotFound) {
 		return domain.Actor{}, err
 	}
@@ -57,7 +57,7 @@ func (s ActorsService) Get(id int) (domain.Actor, error) {
 }
 
 func (s ActorsService) Update(id int, actorUpdate domain.ActorUpdate) (domain.Actor, error) {
-	actor, err := s.Storage.GetByID(id)
+	actor, err := s.Storage.GetActorByID(id)
 	if errors.Is(err, domain.ErrNotFound) {
 		return domain.Actor{}, err
 	}
@@ -78,13 +78,13 @@ func (s ActorsService) Update(id int, actorUpdate domain.ActorUpdate) (domain.Ac
 		actor.Gender = *actorUpdate.Sex
 	}
 
-	s.Storage.Update(actor)
+	s.Storage.UpdateActor(actor)
 
 	return actor, nil
 }
 
 func (s ActorsService) Delete(id int) error {
-	_, err := s.Storage.GetByID(id)
+	_, err := s.Storage.GetActorByID(id)
 	if errors.Is(err, domain.ErrNotFound) {
 		return fmt.Errorf("actor id: %d, err: %w", id, err)
 	}
@@ -93,13 +93,13 @@ func (s ActorsService) Delete(id int) error {
 		return fmt.Errorf("failed to find actor, unexpected error: %w", err)
 	}
 
-	s.Storage.Delete(id)
+	s.Storage.DeleteActor(id)
 
 	return nil
 }
 
 func (s ActorsService) List(sortBy, orderBy, nameQuery, countryOfBirthQuery string) []domain.Actor {
-	actors := s.Storage.GetAll()
+	actors := s.Storage.GetAllActor()
 	var filteredActors []domain.Actor
 
 	if nameQuery != "" || countryOfBirthQuery != "" {
@@ -115,13 +115,13 @@ func (s ActorsService) List(sortBy, orderBy, nameQuery, countryOfBirthQuery stri
 
 	switch {
 	case sortBy == "" && orderBy == "":
-		actors = s.Storage.SortAndOrderBy("name", "asc", filteredActors)
+		actors = s.Storage.SortAndOrderByActor("name", "asc", filteredActors)
 	case sortBy == "" && orderBy != "":
-		actors = s.Storage.SortAndOrderBy("name", orderBy, filteredActors)
+		actors = s.Storage.SortAndOrderByActor("name", orderBy, filteredActors)
 	case sortBy != "" && orderBy == "":
-		actors = s.Storage.SortAndOrderBy(sortBy, "asc", filteredActors)
+		actors = s.Storage.SortAndOrderByActor(sortBy, "asc", filteredActors)
 	default:
-		actors = s.Storage.SortAndOrderBy(sortBy, orderBy, filteredActors)
+		actors = s.Storage.SortAndOrderByActor(sortBy, orderBy, filteredActors)
 	}
 
 	return actors

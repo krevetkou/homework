@@ -1,10 +1,10 @@
 package main
 
 import (
-	api2 "arch-demo/internal/api"
-	domain2 "arch-demo/internal/domain"
-	services2 "arch-demo/internal/services"
-	storage2 "arch-demo/internal/storage"
+	"arch-demo/internal/api"
+	"arch-demo/internal/domain"
+	"arch-demo/internal/services"
+	"arch-demo/internal/storage"
 	"errors"
 	"github.com/go-chi/chi/v5"
 	"log"
@@ -12,13 +12,13 @@ import (
 )
 
 func main() {
-	storage := storage2.NewStorage()
-	actorsService := services2.NewActorService(storage)
-	actorsHandler := api2.NewActorsHandler(actorsService)
-	moviesService := services2.NewMovieService(storage)
-	moviesHandler := api2.NewLaptopsHandler(moviesService)
+	serviceStorage := storage.NewStorage()
+	actorsService := services.NewActorService(serviceStorage)
+	actorsHandler := api.NewActorsHandler(actorsService)
+	moviesService := services.NewMovieService(serviceStorage)
+	moviesHandler := api.NewLaptopsHandler(moviesService)
 
-	actors := []domain2.Actor{
+	actors := []domain.Actor{
 		{
 			Name:           "Lol",
 			BirthYear:      1909,
@@ -42,10 +42,10 @@ func main() {
 		},
 	}
 
-	movies := []domain2.Movie{
+	movies := []domain.Movie{
 		{
 			Name: "Lol",
-			ReleaseDate: domain2.ReleaseDate{
+			ReleaseDate: domain.ReleaseDate{
 				Date:  1,
 				Month: 2,
 				Year:  1995,
@@ -55,7 +55,7 @@ func main() {
 			Rating:  5,
 		}, {
 			Name: "Kek",
-			ReleaseDate: domain2.ReleaseDate{
+			ReleaseDate: domain.ReleaseDate{
 				Date:  1,
 				Month: 3,
 				Year:  1995,
@@ -65,7 +65,7 @@ func main() {
 			Rating:  2,
 		}, {
 			Name: "Cheburek",
-			ReleaseDate: domain2.ReleaseDate{
+			ReleaseDate: domain.ReleaseDate{
 				Date:  1,
 				Month: 2,
 				Year:  2013,
@@ -75,7 +75,7 @@ func main() {
 			Rating:  909,
 		}, {
 			Name: "Shashlik",
-			ReleaseDate: domain2.ReleaseDate{
+			ReleaseDate: domain.ReleaseDate{
 				Date:  5,
 				Month: 5,
 				Year:  2020,
@@ -86,12 +86,24 @@ func main() {
 		},
 	}
 
+	actorsForMovie := map[int][]int{
+		1: {1, 2, 3},
+		2: {2, 1, 4},
+	}
+
 	for _, val := range movies {
-		moviesStorage.Insert(val)
+		serviceStorage.InsertMovie(val)
 	}
 
 	for _, val := range actors {
-		actorsStorage.InsertActor(val)
+		serviceStorage.InsertActor(val)
+	}
+
+	for ind, val := range actorsForMovie {
+		err := serviceStorage.CreateActorsByMovie(ind, val)
+		if err != nil {
+			return
+		}
 	}
 
 	r := chi.NewRouter()

@@ -17,7 +17,7 @@ type MoviesService interface {
 	Delete(id int) error
 	Update(id int, actorUpdate domain.MovieUpdate) (domain.Movie, error)
 	List(orderBy, sortBy, nameQuery, genreQuery string) []domain.Movie
-	GetActorsByMovie(id int) []domain.Actor
+	GetActorsByMovie(id int) ([]domain.Actor, error)
 	CreateActorsForMovie(id int, actorsByMovie []int) error
 }
 
@@ -242,21 +242,20 @@ func (h MoviesHandler) GetActors(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	actorsByMovie := h.Service.GetActorsByMovie(id)
+	actorsByMovie, err := h.Service.GetActorsByMovie(id)
 
-	//movie, err := h.Service.Get(id)
-	//if err != nil {
-	//	switch {
-	//	case errors.Is(err, domain.ErrNotFound):
-	//		http.Error(w, "actor not found", http.StatusNotFound)
-	//	default:
-	//		http.Error(w, "unexpected error", http.StatusInternalServerError)
-	//	}
-	//
-	//	log.Println(err)
-	//	return
-	//}
-	//
+	if err != nil {
+		switch {
+		case errors.Is(err, domain.ErrNotFound):
+			http.Error(w, "actors not found", http.StatusNotFound)
+		default:
+			http.Error(w, "unexpected error", http.StatusInternalServerError)
+		}
+
+		log.Println(err)
+		return
+	}
+
 	data, err := json.Marshal(actorsByMovie)
 	if err != nil {
 		http.Error(w, "failed to create response data", http.StatusInternalServerError)

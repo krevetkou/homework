@@ -119,7 +119,7 @@ func (s *Storage) SortAndOrderByMovie(sortBy, orderBy string, movies []domain.Mo
 	return movies
 }
 
-func (s *Storage) GetActorsByMovie(id int) []domain.Actor {
+func (s *Storage) GetActorsByMovie(id int) ([]domain.Actor, error) {
 	var actors []domain.Actor
 	actorsIDs := s.actorsByMovie[id]
 	for _, val := range actorsIDs {
@@ -132,7 +132,11 @@ func (s *Storage) GetActorsByMovie(id int) []domain.Actor {
 		}
 	}
 
-	return actors
+	if len(actors) == 0 {
+		return []domain.Actor{}, domain.ErrNotFound
+	}
+
+	return actors, nil
 }
 
 func (s *Storage) CreateActorsByMovie(id int, actors []int) error {
