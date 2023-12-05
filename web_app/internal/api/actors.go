@@ -16,7 +16,7 @@ type ActorsService interface {
 	Get(id int) (domain.Actor, error)
 	Delete(id int) error
 	Update(id int, actorUpdate domain.ActorUpdate) (domain.Actor, error)
-	List(sortBy, orderBy, nameQuery, countryOfBirthQuery string) []domain.Actor
+	List(sortBy, orderBy, nameQuery, countryOfBirthQuery string) ([]domain.Actor, error)
 }
 
 type ActorsHandler struct {
@@ -88,7 +88,11 @@ func (h ActorsHandler) List(w http.ResponseWriter, r *http.Request) {
 	NameQuery := r.URL.Query().Get("name")
 	CountryOfBirthQuery := r.URL.Query().Get("country")
 
-	filteredActors := h.Service.List(SortBy, OrderBy, NameQuery, CountryOfBirthQuery)
+	filteredActors, err := h.Service.List(SortBy, OrderBy, NameQuery, CountryOfBirthQuery)
+	if err != nil {
+		http.Error(w, "failed to get actors", http.StatusInternalServerError)
+		return
+	}
 	data, err := json.Marshal(filteredActors)
 	if err != nil {
 		log.Println(err)

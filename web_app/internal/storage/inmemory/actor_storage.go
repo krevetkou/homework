@@ -1,4 +1,4 @@
-package storage
+package inmemory
 
 import (
 	"arch-demo/internal/domain"
@@ -22,7 +22,7 @@ func NewStorage() *Storage {
 	}
 }
 
-func (s *Storage) InsertActor(actor domain.Actor) domain.Actor {
+func (s *Storage) InsertActor(actor domain.Actor) (domain.Actor, error) {
 	var lastID int
 	if len(s.actors) > 0 {
 		lastID = s.actors[len(s.actors)-1:][0].ID
@@ -31,20 +31,20 @@ func (s *Storage) InsertActor(actor domain.Actor) domain.Actor {
 	actor.ID = lastID + 1
 
 	s.actors = append(s.actors, actor)
-	return actor
+	return actor, nil
 }
 
-func (s *Storage) IsActorExists(actor domain.Actor) bool {
+func (s *Storage) IsActorExists(actor domain.Actor) (bool, error) {
 	for i := range s.actors {
 		if strings.Contains(s.actors[i].Name, actor.Name) &&
 			strings.Contains(s.actors[i].Gender, actor.Gender) &&
 			strings.Contains(strconv.Itoa(s.actors[i].BirthYear), strconv.Itoa(actor.BirthYear)) &&
 			strings.Contains(s.actors[i].CountryOfBirth, actor.CountryOfBirth) {
-			return true
+			return true, nil
 		}
 	}
 
-	return false
+	return false, domain.ErrExists
 }
 
 func (s *Storage) GetActorByID(id int) (domain.Actor, error) {
@@ -68,16 +68,18 @@ func (s *Storage) DeleteActor(id int) {
 	})
 }
 
-func (s *Storage) UpdateActor(actorUpdate domain.Actor) {
+func (s *Storage) UpdateActor(actorUpdate domain.Actor) error {
 	for i := range s.actors {
 		if s.actors[i].ID == actorUpdate.ID {
 			s.actors[i] = actorUpdate
 		}
 	}
+
+	return nil
 }
 
-func (s *Storage) GetAllActor() []domain.Actor {
-	return s.actors
+func (s *Storage) GetAllActor() ([]domain.Actor, error) {
+	return s.actors, nil
 }
 
 func (s *Storage) SortAndOrderByActor(sortBy, orderBy string, actors []domain.Actor) []domain.Actor {

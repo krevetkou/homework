@@ -8,12 +8,12 @@ import (
 )
 
 type ActorsRepository interface {
-	InsertActor(actor domain.Actor) domain.Actor
-	IsActorExists(actor domain.Actor) bool
+	InsertActor(actor domain.Actor) (domain.Actor, error)
+	IsActorExists(actor domain.Actor) (bool, error)
 	GetActorByID(id int) (domain.Actor, error)
 	DeleteActor(id int)
-	UpdateActor(actor domain.Actor)
-	GetAllActor() []domain.Actor
+	UpdateActor(actor domain.Actor) error
+	GetAllActor() ([]domain.Actor, error)
 	SortAndOrderByActor(sortBy, orderBy string, actors []domain.Actor) []domain.Actor
 }
 
@@ -33,12 +33,15 @@ func (s ActorsService) Create(actor domain.Actor) (domain.Actor, error) {
 		return domain.Actor{}, domain.ErrFieldsRequired
 	}
 
-	isActorExist := s.Storage.IsActorExists(actor)
+	isActorExist, err := s.Storage.IsActorExists(actor)
 	if isActorExist {
-		return domain.Actor{}, domain.ErrExists
+		return domain.Actor{}, err
 	}
 
-	newActor := s.Storage.InsertActor(actor)
+	newActor, err := s.Storage.InsertActor(actor)
+	if err != nil {
+		return domain.Actor{}, err
+	}
 
 	return newActor, nil
 }
@@ -98,8 +101,11 @@ func (s ActorsService) Delete(id int) error {
 	return nil
 }
 
-func (s ActorsService) List(sortBy, orderBy, nameQuery, countryOfBirthQuery string) []domain.Actor {
-	actors := s.Storage.GetAllActor()
+func (s ActorsService) List(sortBy, orderBy, nameQuery, countryOfBirthQuery string) ([]domain.Actor, error) {
+	actors, err := s.Storage.GetAllActor()
+	if err != nil {
+		return []domain.Actor{}, err
+	}
 	var filteredActors []domain.Actor
 
 	if nameQuery != "" || countryOfBirthQuery != "" {
@@ -124,5 +130,5 @@ func (s ActorsService) List(sortBy, orderBy, nameQuery, countryOfBirthQuery stri
 		actors = s.Storage.SortAndOrderByActor(sortBy, orderBy, filteredActors)
 	}
 
-	return actors
+	return actors, nil
 }

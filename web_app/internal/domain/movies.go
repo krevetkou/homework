@@ -23,3 +23,15 @@ type MovieUpdate struct {
 	Genre       *string      `json:"genre,omitempty"`
 	Rating      *int         `json:"rating,omitempty"`
 }
+
+//{
+//"name": "a",
+//"release_date": {
+//"date": 1,
+//"month": 2,
+//"year": 1905
+//},
+//"country": "afads",
+//"genre": "fv",
+//"rating": 5
+//}
