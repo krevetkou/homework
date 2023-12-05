@@ -126,6 +126,9 @@ func (s *Storage) GetActorsByMovie(id int) ([]domain.Actor, error) {
 		actorExists := slices.ContainsFunc(s.actors, func(actor domain.Actor) bool {
 			return actor.ID == val
 		})
+		if !actorExists {
+			return []domain.Actor{}, domain.ErrNotFound
+		}
 		if actorExists {
 			actor, _ := s.GetActorByID(val) //!!
 			actors = append(actors, actor)
@@ -141,11 +144,21 @@ func (s *Storage) GetActorsByMovie(id int) ([]domain.Actor, error) {
 
 func (s *Storage) CreateActorsByMovie(id int, actors []int) error {
 	_, err := s.GetMovieByID(id)
+
 	switch {
 	case errors.Is(err, domain.ErrNotFound):
 		return err
 	case err != nil:
 		return fmt.Errorf("unexpected error %w", err)
+	}
+
+	for _, val := range actors {
+		actorExists := slices.ContainsFunc(s.actors, func(actor domain.Actor) bool {
+			return actor.ID == val
+		})
+		if !actorExists {
+			return domain.ErrNotFound
+		}
 	}
 
 	//check if all actors exist

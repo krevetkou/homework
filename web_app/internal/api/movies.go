@@ -308,7 +308,7 @@ func (h MoviesHandler) CreateActorsForMovie(w http.ResponseWriter, r *http.Reque
 	if err != nil {
 		switch {
 		case errors.Is(err, domain.ErrNotFound):
-			http.Error(w, "movie not found", http.StatusNotFound)
+			http.Error(w, "actors not found", http.StatusNotFound)
 		default:
 			http.Error(w, "unexpected error", http.StatusInternalServerError)
 		}
