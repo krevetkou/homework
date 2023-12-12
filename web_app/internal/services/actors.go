@@ -4,17 +4,17 @@ import (
 	"arch-demo/internal/domain"
 	"errors"
 	"fmt"
-	"strings"
 )
 
 type ActorsRepository interface {
 	InsertActor(actor domain.Actor) (domain.Actor, error)
 	IsActorExists(actor domain.Actor) (bool, error)
 	GetActorByID(id int) (domain.Actor, error)
-	DeleteActor(id int)
+	DeleteActor(id int) error
 	UpdateActor(actor domain.Actor) error
-	GetAllActor() ([]domain.Actor, error)
+	GetAllActors() ([]domain.Actor, error)
 	SortAndOrderByActor(sortBy, orderBy string, actors []domain.Actor) []domain.Actor
+	FilterActors(nameQuery, countryOfBirthQuery string) ([]domain.Actor, error)
 }
 
 type ActorsService struct {
@@ -102,18 +102,16 @@ func (s ActorsService) Delete(id int) error {
 }
 
 func (s ActorsService) List(sortBy, orderBy, nameQuery, countryOfBirthQuery string) ([]domain.Actor, error) {
-	actors, err := s.Storage.GetAllActor()
+	actors, err := s.Storage.GetAllActors()
 	if err != nil {
 		return []domain.Actor{}, err
 	}
 	var filteredActors []domain.Actor
 
 	if nameQuery != "" || countryOfBirthQuery != "" {
-		for i := range actors {
-			if (nameQuery != "" && strings.Contains(actors[i].Name, nameQuery)) ||
-				(countryOfBirthQuery != "" && strings.Contains(actors[i].CountryOfBirth, countryOfBirthQuery)) {
-				filteredActors = append(filteredActors, actors[i])
-			}
+		filteredActors, err = s.Storage.FilterActors(nameQuery, countryOfBirthQuery)
+		if err != nil {
+			return []domain.Actor{}, err
 		}
 	} else {
 		filteredActors = actors

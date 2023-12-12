@@ -4,11 +4,8 @@ import (
 	"arch-demo/internal/domain"
 	"encoding/json"
 	"errors"
-	"github.com/go-chi/chi/v5"
-	"io"
 	"log"
 	"net/http"
-	"strconv"
 )
 
 type ActorsService interface {
@@ -36,17 +33,10 @@ func (h ActorsHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	body, err := io.ReadAll(r.Body)
+	var newActor domain.Actor
+	err := json.NewDecoder(r.Body).Decode(&newActor)
 	if err != nil {
 		http.Error(w, "failed to read request body", http.StatusBadRequest)
-		log.Println(err)
-		return
-	}
-
-	var newActor domain.Actor
-	err = json.Unmarshal(body, &newActor)
-	if err != nil {
-		http.Error(w, "failed to unmarshall data", http.StatusBadRequest)
 		log.Println(err)
 		return
 	}
@@ -83,12 +73,12 @@ func (h ActorsHandler) Create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h ActorsHandler) List(w http.ResponseWriter, r *http.Request) {
-	SortBy := r.URL.Query().Get("sort")
-	OrderBy := r.URL.Query().Get("order")
-	NameQuery := r.URL.Query().Get("name")
-	CountryOfBirthQuery := r.URL.Query().Get("country")
+	sortBy := r.URL.Query().Get("sort")
+	orderBy := r.URL.Query().Get("order")
+	nameQuery := r.URL.Query().Get("name")
+	countryOfBirthQuery := r.URL.Query().Get("country")
 
-	filteredActors, err := h.Service.List(SortBy, OrderBy, NameQuery, CountryOfBirthQuery)
+	filteredActors, err := h.Service.List(sortBy, orderBy, nameQuery, countryOfBirthQuery)
 	if err != nil {
 		http.Error(w, "failed to get actors", http.StatusInternalServerError)
 		return
@@ -104,22 +94,15 @@ func (h ActorsHandler) List(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-Type", "application/json")
 	_, err = w.Write(data)
 	if err != nil {
+		log.Println(err)
 		return
 	}
 }
 
 func (h ActorsHandler) Get(w http.ResponseWriter, r *http.Request) {
-	idParam := chi.URLParam(r, "id")
-	if idParam == "" {
-		log.Println("id required")
-		http.Error(w, "id required", http.StatusBadRequest)
-		return
-	}
-
-	id, err := strconv.Atoi(idParam)
+	id, err := getID(w, r)
 	if err != nil {
 		log.Println(err)
-		http.Error(w, "failed to parse id query param", http.StatusBadRequest)
 		return
 	}
 
@@ -145,22 +128,15 @@ func (h ActorsHandler) Get(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-Type", "application/json")
 	_, err = w.Write(data)
 	if err != nil {
+		log.Println(err)
 		return
 	}
 }
 
 func (h ActorsHandler) Update(w http.ResponseWriter, r *http.Request) {
-	idParam := chi.URLParam(r, "id")
-	if idParam == "" {
-		log.Println("id required")
-		http.Error(w, "id required", http.StatusBadRequest)
-		return
-	}
-
-	id, err := strconv.Atoi(idParam)
+	id, err := getID(w, r)
 	if err != nil {
 		log.Println(err)
-		http.Error(w, "failed to parse id query param", http.StatusBadRequest)
 		return
 	}
 
@@ -189,27 +165,21 @@ func (h ActorsHandler) Update(w http.ResponseWriter, r *http.Request) {
 	data, err := json.Marshal(updatedActor)
 	if err != nil {
 		http.Error(w, "failed to create response data", http.StatusInternalServerError)
+		return
 	}
 
 	// если не передать content-type, то клиент воспримет контент как text/plain, а не json
 	w.Header().Add("Content-Type", "application/json")
 	_, err = w.Write(data)
 	if err != nil {
+		log.Println(err)
 		return
 	}
 }
 
 func (h ActorsHandler) Delete(w http.ResponseWriter, r *http.Request) {
-	idParam := chi.URLParam(r, "id")
-	if idParam == "" {
-		http.Error(w, "id required", http.StatusBadRequest)
-		log.Println("id required")
-		return
-	}
-
-	id, err := strconv.Atoi(idParam)
+	id, err := getID(w, r)
 	if err != nil {
-		http.Error(w, "failed to parse id query param", http.StatusBadRequest)
 		log.Println(err)
 		return
 	}

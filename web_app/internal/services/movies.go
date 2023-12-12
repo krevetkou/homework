@@ -8,12 +8,12 @@ import (
 )
 
 type MoviesRepository interface {
-	InsertMovie(actor domain.Movie) domain.Movie
-	IsMovieExists(actor domain.Movie) bool
+	InsertMovie(actor domain.Movie) (domain.Movie, error)
+	IsMovieExists(actor domain.Movie) (bool, error)
 	GetMovieByID(id int) (domain.Movie, error)
-	UpdateMovie(actor domain.Movie)
-	DeleteMovie(id int)
-	GetAllMovies() []domain.Movie
+	UpdateMovie(actor domain.Movie) error
+	DeleteMovie(id int) error
+	GetAllMovies() ([]domain.Movie, error)
 	SortAndOrderByMovie(sortBy, orderBy string, movies []domain.Movie) []domain.Movie
 	GetActorsByMovie(id int) ([]domain.Actor, error)
 	CreateActorsByMovie(id int, actors []int) error
@@ -31,17 +31,23 @@ func NewMovieService(storage MoviesRepository) MoviesService {
 
 func (s MoviesService) Create(movie domain.Movie) (domain.Movie, error) {
 	// входящие параметры необходимо валидировать
-	if movie.Name == "" || movie.ReleaseDate.Date == 0 || movie.ReleaseDate.Month == 0 || movie.ReleaseDate.Year == 0 ||
+	if movie.Name == "" || movie.ReleaseDate.String() != "" ||
 		movie.Country == "" || movie.Genre == "" || movie.Rating == 0 {
 		return domain.Movie{}, domain.ErrFieldsRequired
 	}
 
-	isMovieExist := s.Storage.IsMovieExists(movie)
+	isMovieExist, err := s.Storage.IsMovieExists(movie)
+	if err != nil {
+		return domain.Movie{}, err
+	}
 	if isMovieExist {
 		return domain.Movie{}, domain.ErrExists
 	}
 
-	newMovie := s.Storage.InsertMovie(movie)
+	newMovie, err := s.Storage.InsertMovie(movie)
+	if err != nil {
+		return domain.Movie{}, domain.ErrExists
+	}
 
 	return newMovie, nil
 }
@@ -49,7 +55,7 @@ func (s MoviesService) Create(movie domain.Movie) (domain.Movie, error) {
 func (s MoviesService) Get(id int) (domain.Movie, error) {
 	movie, err := s.Storage.GetMovieByID(id)
 	if errors.Is(err, domain.ErrNotFound) {
-		return domain.Movie{}, err
+		return domain.Movie{}, fmt.Errorf("movie id: %d, err: %w", id, err)
 	}
 
 	if err != nil {
@@ -106,7 +112,10 @@ func (s MoviesService) Delete(id int) error {
 }
 
 func (s MoviesService) List(orderBy, sortBy, nameQuery, genreQuery string) []domain.Movie {
-	movies := s.Storage.GetAllMovies()
+	movies, err := s.Storage.GetAllMovies()
+	if err != nil {
+		return []domain.Movie{}
+	}
 	var filteredMovies []domain.Movie
 
 	if nameQuery != "" || genreQuery != "" {

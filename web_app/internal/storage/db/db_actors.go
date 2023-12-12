@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"sort"
+	"strings"
 )
 
 type StorageDB struct {
@@ -30,11 +31,11 @@ func (s *StorageDB) InsertActor(actor domain.Actor) (domain.Actor, error) {
 
 func (s *StorageDB) IsActorExists(actor domain.Actor) (bool, error) {
 	query := `select id from actors where name = $1`
-	var newActor domain.Actor
-	err := s.db.QueryRow(query, actor.Name).Scan(&newActor.ID)
+	var id int8
+	err := s.db.QueryRow(query, actor.Name).Scan(&id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return false, err
+			return false, domain.ErrNotFound
 		}
 		return false, err
 	}
@@ -56,8 +57,14 @@ func (s *StorageDB) GetActorByID(id int) (domain.Actor, error) {
 	return newActor, nil
 }
 
-func (s *StorageDB) DeleteActor(id int) {
+func (s *StorageDB) DeleteActor(id int) error {
+	query := `DELETE FROM actors WHERE id = $1;`
+	_, err := s.db.Exec(query, id)
+	if err != nil {
+		return err
+	}
 
+	return nil
 }
 
 func (s *StorageDB) UpdateActor(actorUpdate domain.Actor) error {
@@ -70,7 +77,7 @@ func (s *StorageDB) UpdateActor(actorUpdate domain.Actor) error {
 	return nil
 }
 
-func (s *StorageDB) GetAllActor() ([]domain.Actor, error) {
+func (s *StorageDB) GetAllActors() ([]domain.Actor, error) {
 	rows, err := s.db.Query("select * from actors")
 	if err != nil {
 		return []domain.Actor{}, err
@@ -91,15 +98,15 @@ func (s *StorageDB) GetAllActor() ([]domain.Actor, error) {
 		actors = append(actors, actor)
 	}
 	if err = rows.Err(); err != nil {
-		return nil, err
+		return []domain.Actor{}, err
 	}
 
 	return actors, nil
 }
 
-func (s *StorageDB) SortAndOrderByActor(sortBy, orderBy string, actors []domain.Actor) []domain.Actor {
+func (s *StorageDB) SortAndOrderByActor(sortOrder, orderBy string, actors []domain.Actor) []domain.Actor {
 	switch {
-	case sortBy == "name":
+	case sortOrder == "name":
 		if orderBy == "" || orderBy == "asc" {
 			sort.Slice(actors, func(i, j int) bool {
 				return actors[i].Name < actors[j].Name
@@ -109,7 +116,7 @@ func (s *StorageDB) SortAndOrderByActor(sortBy, orderBy string, actors []domain.
 				return actors[i].Name > actors[j].Name
 			})
 		}
-	case sortBy == "country":
+	case sortOrder == "country":
 		if orderBy == "" || orderBy == "asc" {
 			sort.Slice(actors, func(i, j int) bool {
 				return actors[i].CountryOfBirth < actors[j].CountryOfBirth
@@ -119,7 +126,7 @@ func (s *StorageDB) SortAndOrderByActor(sortBy, orderBy string, actors []domain.
 				return actors[i].CountryOfBirth > actors[j].CountryOfBirth
 			})
 		}
-	case sortBy == "birthdate":
+	case sortOrder == "birthdate":
 		if orderBy == "" || orderBy == "asc" {
 			sort.Slice(actors, func(i, j int) bool {
 				return actors[i].BirthYear < actors[j].BirthYear
@@ -132,4 +139,21 @@ func (s *StorageDB) SortAndOrderByActor(sortBy, orderBy string, actors []domain.
 	}
 
 	return actors
+}
+
+func (s *StorageDB) FilterActors(nameQuery, countryOfBirthQuery string) ([]domain.Actor, error) {
+	var filteredActors []domain.Actor
+	actors, err := s.GetAllActors()
+	if err != nil {
+		return []domain.Actor{}, err
+	}
+
+	for i := range actors {
+		if (nameQuery != "" && strings.Contains(actors[i].Name, nameQuery)) ||
+			(countryOfBirthQuery != "" && strings.Contains(actors[i].CountryOfBirth, countryOfBirthQuery)) {
+			filteredActors = append(filteredActors, actors[i])
+		}
+	}
+
+	return filteredActors, nil
 }

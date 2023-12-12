@@ -9,30 +9,30 @@ import (
 	"strings"
 )
 
-func (s *Storage) InsertMovie(actor domain.Movie) domain.Movie {
+func (s *Storage) InsertMovie(movie domain.Movie) (domain.Movie, error) {
 	var lastID int
 	if len(s.movies) > 0 {
 		lastID = s.movies[len(s.movies)-1:][0].ID
 	}
 
-	actor.ID = lastID + 1
+	movie.ID = lastID + 1
 
-	s.movies = append(s.movies, actor)
-	return actor
+	s.movies = append(s.movies, movie)
+	return movie, nil
 }
 
-func (s *Storage) IsMovieExists(movie domain.Movie) bool {
+func (s *Storage) IsMovieExists(movie domain.Movie) (bool, error) {
 	for i := range s.movies {
 		if strings.Contains(s.movies[i].Name, movie.Name) &&
 			s.movies[i].ReleaseDate == movie.ReleaseDate &&
 			strings.Contains(s.movies[i].Country, movie.Country) &&
 			strings.Contains(s.movies[i].Genre, movie.Genre) &&
 			s.movies[i].Rating == movie.Rating {
-			return true
+			return true, nil
 		}
 	}
 
-	return false
+	return false, nil
 }
 
 func (s *Storage) GetMovieByID(id int) (domain.Movie, error) {
@@ -50,22 +50,26 @@ func (s *Storage) GetMovieByID(id int) (domain.Movie, error) {
 	return *movie, nil
 }
 
-func (s *Storage) UpdateMovie(movieUpdate domain.Movie) {
+func (s *Storage) UpdateMovie(movieUpdate domain.Movie) error {
 	for i := range s.movies {
 		if s.movies[i].ID == movieUpdate.ID {
 			s.movies[i] = movieUpdate
 		}
 	}
+
+	return nil
 }
 
-func (s *Storage) DeleteMovie(id int) {
+func (s *Storage) DeleteMovie(id int) error {
 	s.movies = slices.DeleteFunc(s.movies, func(l1 domain.Movie) bool {
 		return l1.ID == id
 	})
+
+	return nil
 }
 
-func (s *Storage) GetAllMovies() []domain.Movie {
-	return s.movies
+func (s *Storage) GetAllMovies() ([]domain.Movie, error) {
+	return s.movies, nil
 }
 
 func (s *Storage) SortAndOrderByMovie(sortBy, orderBy string, movies []domain.Movie) []domain.Movie {
@@ -95,23 +99,11 @@ func (s *Storage) SortAndOrderByMovie(sortBy, orderBy string, movies []domain.Mo
 	case sortBy == "date":
 		if orderBy == "" || orderBy == "asc" {
 			sort.Slice(movies, func(i, j int) bool {
-				return movies[i].ReleaseDate.Year > movies[j].ReleaseDate.Year
-			})
-			sort.Slice(movies, func(i, j int) bool {
-				return movies[i].ReleaseDate.Month > movies[j].ReleaseDate.Month
-			})
-			sort.Slice(movies, func(i, j int) bool {
-				return movies[i].ReleaseDate.Date > movies[j].ReleaseDate.Date
+				return movies[i].ReleaseDate.Before(movies[j].ReleaseDate)
 			})
 		} else {
 			sort.Slice(movies, func(i, j int) bool {
-				return movies[i].ReleaseDate.Year < movies[j].ReleaseDate.Year
-			})
-			sort.Slice(movies, func(i, j int) bool {
-				return movies[i].ReleaseDate.Month < movies[j].ReleaseDate.Month
-			})
-			sort.Slice(movies, func(i, j int) bool {
-				return movies[i].ReleaseDate.Date < movies[j].ReleaseDate.Date
+				return movies[i].ReleaseDate.After(movies[j].ReleaseDate)
 			})
 		}
 	}

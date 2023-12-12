@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/go-chi/chi/v5"
-	"io"
 	"log"
 	"net/http"
 	"strconv"
@@ -49,6 +48,7 @@ func (h MoviesHandler) List(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-Type", "application/json")
 	_, err = w.Write(data)
 	if err != nil {
+		log.Println(err)
 		return
 	}
 }
@@ -59,15 +59,8 @@ func (h MoviesHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		http.Error(w, "failed to read request body", http.StatusBadRequest)
-		log.Println(err)
-		return
-	}
-
 	var newMovie domain.Movie
-	err = json.Unmarshal(body, &newMovie)
+	err := json.NewDecoder(r.Body).Decode(&newMovie)
 	if err != nil {
 		http.Error(w, "failed to unmarshall data", http.StatusBadRequest)
 		log.Println(err)
@@ -106,17 +99,9 @@ func (h MoviesHandler) Create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h MoviesHandler) Get(w http.ResponseWriter, r *http.Request) {
-	idParam := chi.URLParam(r, "id")
-	if idParam == "" {
-		log.Println("id required")
-		http.Error(w, "id required", http.StatusBadRequest)
-		return
-	}
-
-	id, err := strconv.Atoi(idParam)
+	id, err := getID(w, r)
 	if err != nil {
 		log.Println(err)
-		http.Error(w, "failed to parse id query param", http.StatusBadRequest)
 		return
 	}
 
@@ -142,22 +127,15 @@ func (h MoviesHandler) Get(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-Type", "application/json")
 	_, err = w.Write(data)
 	if err != nil {
+		log.Println(err)
 		return
 	}
 }
 
 func (h MoviesHandler) Update(w http.ResponseWriter, r *http.Request) {
-	idParam := chi.URLParam(r, "id")
-	if idParam == "" {
-		log.Println("id required")
-		http.Error(w, "id required", http.StatusBadRequest)
-		return
-	}
-
-	id, err := strconv.Atoi(idParam)
+	id, err := getID(w, r)
 	if err != nil {
 		log.Println(err)
-		http.Error(w, "failed to parse id query param", http.StatusBadRequest)
 		return
 	}
 
@@ -192,21 +170,14 @@ func (h MoviesHandler) Update(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-Type", "application/json")
 	_, err = w.Write(data)
 	if err != nil {
+		log.Println(err)
 		return
 	}
 }
 
 func (h MoviesHandler) Delete(w http.ResponseWriter, r *http.Request) {
-	idParam := chi.URLParam(r, "id")
-	if idParam == "" {
-		http.Error(w, "id required", http.StatusBadRequest)
-		log.Println("id required")
-		return
-	}
-
-	id, err := strconv.Atoi(idParam)
+	id, err := getID(w, r)
 	if err != nil {
-		http.Error(w, "failed to parse id query param", http.StatusBadRequest)
 		log.Println(err)
 		return
 	}
@@ -228,22 +199,13 @@ func (h MoviesHandler) Delete(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h MoviesHandler) GetActors(w http.ResponseWriter, r *http.Request) {
-	idParam := chi.URLParam(r, "id")
-	if idParam == "" {
-		log.Println("id required")
-		http.Error(w, "id required", http.StatusBadRequest)
-		return
-	}
-
-	id, err := strconv.Atoi(idParam)
+	id, err := getID(w, r)
 	if err != nil {
 		log.Println(err)
-		http.Error(w, "failed to parse id query param", http.StatusBadRequest)
 		return
 	}
 
 	actorsByMovie, err := h.Service.GetActorsByMovie(id)
-
 	if err != nil {
 		switch {
 		case errors.Is(err, domain.ErrNotFound):
@@ -265,6 +227,7 @@ func (h MoviesHandler) GetActors(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-Type", "application/json")
 	_, err = w.Write(data)
 	if err != nil {
+		log.Println(err)
 		return
 	}
 }
@@ -289,15 +252,8 @@ func (h MoviesHandler) CreateActorsForMovie(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		http.Error(w, "failed to read request body", http.StatusBadRequest)
-		log.Println(err)
-		return
-	}
-
 	var actorsByMovie []int
-	err = json.Unmarshal(body, &actorsByMovie)
+	err = json.NewDecoder(r.Body).Decode(&actorsByMovie)
 	if err != nil {
 		http.Error(w, "failed to unmarshall data", http.StatusBadRequest)
 		log.Println(err)
@@ -318,4 +274,22 @@ func (h MoviesHandler) CreateActorsForMovie(w http.ResponseWriter, r *http.Reque
 	}
 
 	w.WriteHeader(http.StatusCreated)
+}
+
+func getID(w http.ResponseWriter, r *http.Request) (int, error) {
+	idParam := chi.URLParam(r, "id")
+	if idParam == "" {
+		log.Println("id required")
+		http.Error(w, "id required", http.StatusBadRequest)
+		return 0, domain.ErrIDRequired
+	}
+
+	id, err := strconv.Atoi(idParam)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, "failed to parse id query param", http.StatusBadRequest)
+		return 0, err
+	}
+
+	return id, nil
 }

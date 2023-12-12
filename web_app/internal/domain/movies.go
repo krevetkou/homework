@@ -1,36 +1,28 @@
 package domain
 
+import "time"
+
 // Характеристики фильма: название фильма, дата выхода, страна, жанр, рейтинг от 1 до 5
 type Movie struct {
-	ID          int         `json:"id"`
-	Name        string      `json:"name"`
-	ReleaseDate ReleaseDate `json:"release_date"`
-	Country     string      `json:"country"`
-	Genre       string      `json:"genre"`
-	Rating      int         `json:"rating"`
-}
-
-type ReleaseDate struct {
-	Date  int `json:"date"`
-	Month int `json:"month"`
-	Year  int `json:"year"`
+	ID          int       `json:"id"`
+	Name        string    `json:"name"`
+	ReleaseDate time.Time `json:"release_date"`
+	Country     string    `json:"country"`
+	Genre       string    `json:"genre"`
+	Rating      int8      `json:"rating"`
 }
 
 type MovieUpdate struct {
-	Name        *string      `json:"name,omitempty"`
-	ReleaseDate *ReleaseDate `json:"release_date,omitempty"`
-	Country     *string      `json:"country,omitempty"`
-	Genre       *string      `json:"genre,omitempty"`
-	Rating      *int         `json:"rating,omitempty"`
+	Name        *string    `json:"name,omitempty"`
+	ReleaseDate *time.Time `json:"release_date,omitempty"`
+	Country     *string    `json:"country,omitempty"`
+	Genre       *string    `json:"genre,omitempty"`
+	Rating      *int8      `json:"rating,omitempty"`
 }
 
 //{
 //"name": "a",
-//"release_date": {
-//"date": 1,
-//"month": 2,
-//"year": 1905
-//},
+//"release_date": "2021-02-18T21:54:42.123Z",
 //"country": "afads",
 //"genre": "fv",
 //"rating": 5

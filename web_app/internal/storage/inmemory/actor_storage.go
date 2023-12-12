@@ -62,10 +62,12 @@ func (s *Storage) GetActorByID(id int) (domain.Actor, error) {
 	return *actor, nil
 }
 
-func (s *Storage) DeleteActor(id int) {
+func (s *Storage) DeleteActor(id int) error {
 	s.actors = slices.DeleteFunc(s.actors, func(l1 domain.Actor) bool {
 		return l1.ID == id
 	})
+
+	return nil
 }
 
 func (s *Storage) UpdateActor(actorUpdate domain.Actor) error {
@@ -78,13 +80,13 @@ func (s *Storage) UpdateActor(actorUpdate domain.Actor) error {
 	return nil
 }
 
-func (s *Storage) GetAllActor() ([]domain.Actor, error) {
+func (s *Storage) GetAllActors() ([]domain.Actor, error) {
 	return s.actors, nil
 }
 
-func (s *Storage) SortAndOrderByActor(sortBy, orderBy string, actors []domain.Actor) []domain.Actor {
+func (s *Storage) SortAndOrderByActor(sortOrder, orderBy string, actors []domain.Actor) []domain.Actor {
 	switch {
-	case sortBy == "name":
+	case sortOrder == "name":
 		if orderBy == "" || orderBy == "asc" {
 			sort.Slice(actors, func(i, j int) bool {
 				return actors[i].Name < actors[j].Name
@@ -94,7 +96,7 @@ func (s *Storage) SortAndOrderByActor(sortBy, orderBy string, actors []domain.Ac
 				return actors[i].Name > actors[j].Name
 			})
 		}
-	case sortBy == "country":
+	case sortOrder == "country":
 		if orderBy == "" || orderBy == "asc" {
 			sort.Slice(actors, func(i, j int) bool {
 				return actors[i].CountryOfBirth < actors[j].CountryOfBirth
@@ -104,7 +106,7 @@ func (s *Storage) SortAndOrderByActor(sortBy, orderBy string, actors []domain.Ac
 				return actors[i].CountryOfBirth > actors[j].CountryOfBirth
 			})
 		}
-	case sortBy == "birthdate":
+	case sortOrder == "birthdate":
 		if orderBy == "" || orderBy == "asc" {
 			sort.Slice(actors, func(i, j int) bool {
 				return actors[i].BirthYear < actors[j].BirthYear
@@ -117,4 +119,21 @@ func (s *Storage) SortAndOrderByActor(sortBy, orderBy string, actors []domain.Ac
 	}
 
 	return actors
+}
+
+func (s *Storage) FilterActors(nameQuery, countryOfBirthQuery string) ([]domain.Actor, error) {
+	var filteredActors []domain.Actor
+	actors, err := s.GetAllActors()
+	if err != nil {
+		return []domain.Actor{}, err
+	}
+
+	for i := range s.actors {
+		if (nameQuery != "" && strings.Contains(actors[i].Name, nameQuery)) ||
+			(countryOfBirthQuery != "" && strings.Contains(actors[i].CountryOfBirth, countryOfBirthQuery)) {
+			filteredActors = append(filteredActors, actors[i])
+		}
+	}
+
+	return filteredActors, nil
 }
