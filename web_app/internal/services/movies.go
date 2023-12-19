@@ -16,7 +16,7 @@ type MoviesRepository interface {
 	GetAllMovies() ([]domain.Movie, error)
 	SortAndOrderByMovie(sortBy, orderBy string, movies []domain.Movie) []domain.Movie
 	GetActorsByMovie(id int) ([]domain.Actor, error)
-	CreateActorsByMovie(id int, actors []int) error
+	CreateActorsByMovie(id int, actors []int) (int, []int, error)
 }
 
 type MoviesService struct {
@@ -31,17 +31,9 @@ func NewMovieService(storage MoviesRepository) MoviesService {
 
 func (s MoviesService) Create(movie domain.Movie) (domain.Movie, error) {
 	// входящие параметры необходимо валидировать
-	if movie.Name == "" || movie.ReleaseDate.String() != "" ||
+	if movie.Name == "" || movie.ReleaseDate.String() == "" ||
 		movie.Country == "" || movie.Genre == "" || movie.Rating == 0 {
 		return domain.Movie{}, domain.ErrFieldsRequired
-	}
-
-	isMovieExist, err := s.Storage.IsMovieExists(movie)
-	if err != nil {
-		return domain.Movie{}, err
-	}
-	if isMovieExist {
-		return domain.Movie{}, domain.ErrExists
 	}
 
 	newMovie, err := s.Storage.InsertMovie(movie)
@@ -157,12 +149,14 @@ func (s MoviesService) GetActorsByMovie(id int) ([]domain.Actor, error) {
 	return actors, nil
 }
 
-func (s MoviesService) CreateActorsForMovie(id int, actorsByMovie []int) error {
-	err := s.Storage.CreateActorsByMovie(id, actorsByMovie)
+func (s MoviesService) CreateActorsForMovie(id int, actorsByMovie []int) (int, []int, error) {
+	var movieID int
+	var actorsIDs []int
+	movieID, actorsIDs, err := s.Storage.CreateActorsByMovie(id, actorsByMovie)
 
 	if err != nil {
-		return err
+		return 0, []int{0}, err
 	}
 
-	return nil
+	return movieID, actorsIDs, nil
 }

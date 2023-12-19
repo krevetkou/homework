@@ -4,15 +4,27 @@ import (
 	"arch-demo/internal/domain"
 	"database/sql"
 	"errors"
+	"github.com/lib/pq"
 	"sort"
+	"strconv"
+	"strings"
 )
 
 func (s *StorageDB) InsertMovie(movie domain.Movie) (domain.Movie, error) {
+	isMovieExists, err := s.IsMovieExists(movie)
+	if err != nil {
+		return domain.Movie{}, err
+	}
+	if isMovieExists {
+		return domain.Movie{}, domain.ErrExists
+	}
+
 	query := `insert into movies (name, release_date, country, genre, rating) 
 				values ($1, $2, $3, $4, $5) 
 				returning id, name, release_date, country, genre, rating`
+
 	var newMovie domain.Movie
-	err := s.db.QueryRow(query, movie.Name, movie.ReleaseDate, movie.Country, movie.Genre, movie.Rating).
+	err = s.db.QueryRow(query, movie.Name, movie.ReleaseDate, movie.Country, movie.Genre, movie.Rating).
 		Scan(&newMovie.ID, &newMovie.Name, &newMovie.ReleaseDate, &newMovie.Country, &newMovie.Genre, &newMovie.Rating)
 	if err != nil {
 		return domain.Movie{}, err
@@ -25,9 +37,10 @@ func (s *StorageDB) IsMovieExists(movie domain.Movie) (bool, error) {
 	query := `select id from movies where name = $1`
 	var id int8
 	err := s.db.QueryRow(query, movie.Name).Scan(&id)
+
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return false, domain.ErrNotFound
+			return false, nil
 		}
 		return false, err
 	}
@@ -136,24 +149,47 @@ func (s *StorageDB) SortAndOrderByMovie(sortBy, orderBy string, movies []domain.
 }
 
 func (s *StorageDB) GetActorsByMovie(id int) ([]domain.Actor, error) {
-	query := `select actors_ids from "actorsInMovies" where id = $1`
-	var actorsIDs []int
-	err := s.db.QueryRow(query, id).Scan(&actorsIDs)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return []domain.Actor{}, err
-		}
-		return []domain.Actor{}, err
-	}
 	actors, err := s.GetAllActors()
 	if err != nil {
 		return []domain.Actor{}, err
 	}
 
+	rows, err := s.db.Query("select actors_ids from \"actorsInMovies\" where movie_id = $1", id)
+	if err != nil {
+		return []domain.Actor{}, err
+	}
+	defer func(rows *sql.Rows) {
+		err = rows.Close()
+		if err != nil {
+			return
+		}
+	}(rows)
+
+	var actorsIDsStr string
+	for rows.Next() {
+		if err = rows.Scan(&actorsIDsStr); err != nil {
+			return []domain.Actor{}, err
+		}
+		actorsIDsStr = strings.ReplaceAll(actorsIDsStr, "{", "")
+		actorsIDsStr = strings.ReplaceAll(actorsIDsStr, "}", "")
+	}
+	if err = rows.Err(); err != nil {
+		return []domain.Actor{}, err
+	}
+
+	var actorsIDs []string
+	actorsIDs = strings.Split(actorsIDsStr, ",")
 	var filteredActors []domain.Actor
 	for _, actor := range actors {
 		for _, actorID := range actorsIDs {
-			if actorID == actor.ID {
+			if err != nil {
+				return []domain.Actor{}, err
+			}
+			actorIDInt, err := strconv.Atoi(actorID)
+			if err != nil {
+				return []domain.Actor{}, err
+			}
+			if (actorIDInt) == actor.ID {
 				filteredActors = append(filteredActors, actor)
 				break
 			}
@@ -163,6 +199,37 @@ func (s *StorageDB) GetActorsByMovie(id int) ([]domain.Actor, error) {
 	return filteredActors, nil
 }
 
-func (s *StorageDB) CreateActorsByMovie(id int, actors []int) error {
-	return nil
+func (s *StorageDB) CreateActorsByMovie(id int, actors []int) (int, []int, error) {
+	_, err := s.GetMovieByID(id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return 0, []int{0}, domain.ErrNotExists
+		}
+		return 0, []int{0}, err
+	}
+
+	rows, err := s.db.Query("insert into \"actorsInMovies\" (movie_id, actors_ids) values ($1, $2) returning movie_id, actors_ids")
+	if err != nil {
+		return 0, []int{0}, err
+	}
+	defer func(rows *sql.Rows) {
+		err = rows.Close()
+		if err != nil {
+			return
+		}
+	}(rows)
+
+	var movieID int
+	var actorsIDs []int
+	for rows.Next() {
+		if err = rows.Scan(&movieID, pq.Array(&actorsIDs)); err != nil {
+			return 0, []int{0}, err
+		}
+
+	}
+	if err = rows.Err(); err != nil {
+		return 0, []int{0}, err
+	}
+
+	return movieID, actorsIDs, nil
 }

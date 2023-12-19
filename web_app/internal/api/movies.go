@@ -17,7 +17,7 @@ type MoviesService interface {
 	Update(id int, actorUpdate domain.MovieUpdate) (domain.Movie, error)
 	List(orderBy, sortBy, nameQuery, genreQuery string) []domain.Movie
 	GetActorsByMovie(id int) ([]domain.Actor, error)
-	CreateActorsForMovie(id int, actorsByMovie []int) error
+	CreateActorsForMovie(id int, actorsByMovie []int) (int, []int, error)
 }
 
 type MoviesHandler struct {
@@ -252,15 +252,16 @@ func (h MoviesHandler) CreateActorsForMovie(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	var actorsByMovie []int
-	err = json.NewDecoder(r.Body).Decode(&actorsByMovie)
+	var actorsForMovie []int
+	err = json.NewDecoder(r.Body).Decode(&actorsForMovie)
 	if err != nil {
 		http.Error(w, "failed to unmarshall data", http.StatusBadRequest)
 		log.Println(err)
 		return
 	}
 
-	err = h.Service.CreateActorsForMovie(id, actorsByMovie)
+	var actorsIDs []int
+	_, actorsIDs, err = h.Service.CreateActorsForMovie(id, actorsForMovie)
 	if err != nil {
 		switch {
 		case errors.Is(err, domain.ErrNotFound):
@@ -273,7 +274,19 @@ func (h MoviesHandler) CreateActorsForMovie(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	data, err := json.Marshal(actorsIDs)
+	if err != nil {
+		http.Error(w, "failed to create response data", http.StatusInternalServerError)
+	}
+
+	// если не передать content-type, то клиент воспримет контент как text/plain, а не json
+	w.Header().Add("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
+	_, err = w.Write(data)
+	if err != nil {
+		log.Println(err)
+		return
+	}
 }
 
 func getID(w http.ResponseWriter, r *http.Request) (int, error) {

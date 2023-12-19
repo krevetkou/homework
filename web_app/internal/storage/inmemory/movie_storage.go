@@ -134,14 +134,14 @@ func (s *Storage) GetActorsByMovie(id int) ([]domain.Actor, error) {
 	return actors, nil
 }
 
-func (s *Storage) CreateActorsByMovie(id int, actors []int) error {
+func (s *Storage) CreateActorsByMovie(id int, actors []int) (int, []int, error) {
 	_, err := s.GetMovieByID(id)
 
 	switch {
 	case errors.Is(err, domain.ErrNotFound):
-		return err
+		return 0, []int{0}, domain.ErrNotExists
 	case err != nil:
-		return fmt.Errorf("unexpected error %w", err)
+		return 0, []int{0}, fmt.Errorf("unexpected error %w", err)
 	}
 
 	for _, val := range actors {
@@ -149,7 +149,7 @@ func (s *Storage) CreateActorsByMovie(id int, actors []int) error {
 			return actor.ID == val
 		})
 		if !actorExists {
-			return domain.ErrNotFound
+			return 0, []int{0}, domain.ErrNotFound
 		}
 	}
 
@@ -157,5 +157,5 @@ func (s *Storage) CreateActorsByMovie(id int, actors []int) error {
 
 	s.actorsByMovie[id] = actors
 
-	return nil
+	return id, actors, nil
 }
