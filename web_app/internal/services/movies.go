@@ -98,7 +98,10 @@ func (s MoviesService) Delete(id int) error {
 		return fmt.Errorf("failed to find movie, unexpected error: %w", err)
 	}
 
-	s.Storage.DeleteMovie(id)
+	err = s.Storage.DeleteMovie(id)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

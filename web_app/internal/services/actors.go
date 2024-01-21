@@ -96,7 +96,10 @@ func (s ActorsService) Delete(id int) error {
 		return fmt.Errorf("failed to find actor, unexpected error: %w", err)
 	}
 
-	s.Storage.DeleteActor(id)
+	err = s.Storage.DeleteActor(id)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

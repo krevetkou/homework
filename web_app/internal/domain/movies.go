@@ -2,7 +2,6 @@ package domain
 
 import "time"
 
-// Характеристики фильма: название фильма, дата выхода, страна, жанр, рейтинг от 1 до 5
 type Movie struct {
 	ID          int       `json:"id"`
 	Name        string    `json:"name"`
