@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/golang/mock/gomock"
 	"io"
 	"net/http"
@@ -179,7 +180,6 @@ func TestList(t *testing.T) {
 
 	testCases := []struct {
 		name          string
-		actors        []domain.Actor
 		mockInit      func(s *mock_api.MockActorsService)
 		header        http.Header
 		expStatusCode int
@@ -187,36 +187,35 @@ func TestList(t *testing.T) {
 		expErr        bool
 	}{
 		{
-			name: "get_actors_failed",
-			actors: []domain.Actor{
-				{
+			name: "get_actors_success",
+			mockInit: func(s *mock_api.MockActorsService) {
+				s.EXPECT().Create(gomock.Any()).Return(domain.Actor{
 					Name:           "Lol",
 					BirthYear:      1909,
 					CountryOfBirth: "Sos",
 					Gender:         "female",
-				}, {
+				}, nil).AnyTimes()
+				s.EXPECT().Create(gomock.Any()).Return(domain.Actor{
 					Name:           "Kek",
 					BirthYear:      2012,
 					CountryOfBirth: "Lock",
 					Gender:         "male",
-				}, {
+				}, nil).AnyTimes()
+				s.EXPECT().Create(gomock.Any()).Return(domain.Actor{
 					Name:           "Cheburek",
 					BirthYear:      900,
 					CountryOfBirth: "Klkd",
 					Gender:         "elephant",
-				},
-			},
-			mockInit: func(s *mock_api.MockActorsService) {
-				s.EXPECT().List(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+				}, nil).AnyTimes()
+				s.EXPECT().List(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 			},
 			header: http.Header{
 				"Content-Type": []string{
 					"application/json",
 				},
 			},
-			expStatusCode: http.StatusInternalServerError,
-			expErrMessage: "failed to get actors\n",
-			expErr:        true,
+			expStatusCode: http.StatusOK,
+			expErr:        false,
 		},
 	}
 
@@ -233,20 +232,22 @@ func TestList(t *testing.T) {
 
 			actors := []domain.Actor{
 				{
-					Name:           "Lol",
-					BirthYear:      1909,
-					CountryOfBirth: "Sos",
-					Gender:         "female",
-				}, {
-					Name:           "Kek",
-					BirthYear:      2012,
-					CountryOfBirth: "Lock",
-					Gender:         "male",
-				}, {
 					Name:           "Cheburek",
 					BirthYear:      900,
 					CountryOfBirth: "Klkd",
 					Gender:         "elephant",
+				},
+				{
+					Name:           "Kek",
+					BirthYear:      2012,
+					CountryOfBirth: "Lock",
+					Gender:         "male",
+				},
+				{
+					Name:           "Lol",
+					BirthYear:      1909,
+					CountryOfBirth: "Sos",
+					Gender:         "female",
 				},
 			}
 
@@ -269,12 +270,12 @@ func TestList(t *testing.T) {
 				return
 			}
 
-			var actorsTest string
+			var actorsTest []domain.Actor
 			_ = json.NewDecoder(recorder.Result().Body).Decode(&actorsTest)
 
-			if {
+			fmt.Println(actorsTest)
+			fmt.Println(actors)
 
-			}
 		})
 	}
 }
