@@ -30,6 +30,7 @@ func NewLaptopsHandler(service MoviesService) MoviesHandler {
 	}
 }
 
+//go:generate mockgen -source movies.go -destination ../tests/api_mocks/movies.go apimocks
 func (h MoviesHandler) List(w http.ResponseWriter, r *http.Request) {
 	SortBy := r.URL.Query().Get("sort")
 	OrderBy := r.URL.Query().Get("order")
