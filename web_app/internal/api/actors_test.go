@@ -189,25 +189,26 @@ func TestList(t *testing.T) {
 		{
 			name: "get_actors_success",
 			mockInit: func(s *mock_api.MockActorsService) {
-				s.EXPECT().Create(gomock.Any()).Return(domain.Actor{
-					Name:           "Lol",
-					BirthYear:      1909,
-					CountryOfBirth: "Sos",
-					Gender:         "female",
-				}, nil).AnyTimes()
-				s.EXPECT().Create(gomock.Any()).Return(domain.Actor{
-					Name:           "Kek",
-					BirthYear:      2012,
-					CountryOfBirth: "Lock",
-					Gender:         "male",
-				}, nil).AnyTimes()
-				s.EXPECT().Create(gomock.Any()).Return(domain.Actor{
-					Name:           "Cheburek",
-					BirthYear:      900,
-					CountryOfBirth: "Klkd",
-					Gender:         "elephant",
-				}, nil).AnyTimes()
-				s.EXPECT().List(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
+				s.EXPECT().List(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return([]domain.Actor{
+					{
+						Name:           "Cheburek",
+						BirthYear:      900,
+						CountryOfBirth: "Klkd",
+						Gender:         "elephant",
+					},
+					{
+						Name:           "Kek",
+						BirthYear:      2012,
+						CountryOfBirth: "Lock",
+						Gender:         "male",
+					},
+					{
+						Name:           "Lol",
+						BirthYear:      1909,
+						CountryOfBirth: "Sos",
+						Gender:         "female",
+					},
+				}, nil)
 			},
 			header: http.Header{
 				"Content-Type": []string{
@@ -270,7 +271,7 @@ func TestList(t *testing.T) {
 				return
 			}
 
-			var actorsTest []domain.Actor
+			var actorsTest string
 			_ = json.NewDecoder(recorder.Result().Body).Decode(&actorsTest)
 
 			fmt.Println(actorsTest)
