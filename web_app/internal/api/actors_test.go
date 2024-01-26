@@ -6,7 +6,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/golang/mock/gomock"
 	"io"
 	"net/http"
@@ -189,7 +188,7 @@ func TestList(t *testing.T) {
 		{
 			name: "get_actors_success",
 			mockInit: func(s *mock_api.MockActorsService) {
-				s.EXPECT().List(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return([]domain.Actor{
+				s.EXPECT().List(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]domain.Actor{
 					{
 						Name:           "Cheburek",
 						BirthYear:      900,
@@ -231,32 +230,69 @@ func TestList(t *testing.T) {
 			}
 			h := NewActorsHandler(s)
 
-			actors := []domain.Actor{
-				{
+			req := httptest.NewRequest(http.MethodGet, "/api/", io.Reader(nil))
+			req.Header = tc.header
+			recorder := httptest.NewRecorder()
+
+			h.List(recorder, req)
+			if recorder.Result().StatusCode != tc.expStatusCode {
+				t.Errorf("expected status code: %d, got: %d", tc.expStatusCode, recorder.Result().StatusCode)
+			}
+
+			var actorsTest []domain.Actor
+			_ = json.NewDecoder(recorder.Result().Body).Decode(&actorsTest)
+
+		})
+	}
+}
+
+func TestGet(t *testing.T) {
+
+	testCases := []struct {
+		name          string
+		mockInit      func(s *mock_api.MockActorsService)
+		header        http.Header
+		expStatusCode int
+		expErrMessage string
+		expErr        bool
+	}{
+		{
+			name: "get_actor_success",
+			mockInit: func(s *mock_api.MockActorsService) {
+				s.EXPECT().Get(1).Return(domain.Actor{
+					ID:             1,
 					Name:           "Cheburek",
 					BirthYear:      900,
 					CountryOfBirth: "Klkd",
 					Gender:         "elephant",
+				}, nil).AnyTimes()
+			},
+			header: http.Header{
+				"Content-Type": []string{
+					"application/json",
 				},
-				{
-					Name:           "Kek",
-					BirthYear:      2012,
-					CountryOfBirth: "Lock",
-					Gender:         "male",
-				},
-				{
-					Name:           "Lol",
-					BirthYear:      1909,
-					CountryOfBirth: "Sos",
-					Gender:         "female",
-				},
+			},
+			expStatusCode: http.StatusOK,
+			expErr:        false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			s := mock_api.NewMockActorsService(ctrl)
+			if tc.mockInit != nil {
+				tc.mockInit(s)
 			}
+			h := NewActorsHandler(s)
 
 			req := httptest.NewRequest(http.MethodGet, "/api/", io.Reader(nil))
 			req.Header = tc.header
 			recorder := httptest.NewRecorder()
 
-			h.Create(recorder, req)
+			h.Get(recorder, req)
 			if recorder.Result().StatusCode != tc.expStatusCode {
 				t.Errorf("expected status code: %d, got: %d", tc.expStatusCode, recorder.Result().StatusCode)
 			}
@@ -271,11 +307,8 @@ func TestList(t *testing.T) {
 				return
 			}
 
-			var actorsTest string
-			_ = json.NewDecoder(recorder.Result().Body).Decode(&actorsTest)
-
-			fmt.Println(actorsTest)
-			fmt.Println(actors)
+			var actor domain.Actor
+			_ = json.NewDecoder(recorder.Result().Body).Decode(&actor)
 
 		})
 	}
