@@ -28,7 +28,7 @@ func main() {
 	actorsService := services.NewActorService(dbStorage)
 	actorsHandler := api.NewActorsHandler(actorsService)
 	moviesService := services.NewMovieService(dbStorage)
-	moviesHandler := api.NewLaptopsHandler(moviesService)
+	moviesHandler := api.NewMoviesHandler(moviesService)
 
 	r := chi.NewRouter()
 	r.Route("/", func(r chi.Router) {

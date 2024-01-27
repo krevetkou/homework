@@ -77,11 +77,14 @@ func (s ActorsService) Update(id int, actorUpdate domain.ActorUpdate) (domain.Ac
 		actor.CountryOfBirth = *actorUpdate.CountryOfBirth
 	}
 
-	if actorUpdate.Sex != nil {
-		actor.Gender = *actorUpdate.Sex
+	if actorUpdate.Gender != nil {
+		actor.Gender = *actorUpdate.Gender
 	}
 
-	s.Storage.UpdateActor(actor)
+	err = s.Storage.UpdateActor(actor)
+	if err != nil {
+		return domain.Actor{}, err
+	}
 
 	return actor, nil
 }

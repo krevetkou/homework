@@ -55,9 +55,9 @@
 			<div id="nav">
 				<select id="files">
 				
-				<option value="file0">arch-demo/internal/api/actors.go (20.2%)</option>
+				<option value="file0">arch-demo/internal/api/actors.go (53.8%)</option>
 				
-				<option value="file1">arch-demo/internal/api/movies.go (0.0%)</option>
+				<option value="file1">arch-demo/internal/api/movies.go (15.7%)</option>
 				
 				</select>
 			</div>
@@ -147,7 +147,7 @@ func (h ActorsHandler) Create(w http.ResponseWriter, r *http.Request) <span clas
         }</span>
 }
 
-func (h ActorsHandler) List(w http.ResponseWriter, r *http.Request) <span class="cov0" title="0">{
+func (h ActorsHandler) List(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
         sortBy := r.URL.Query().Get("sort")
         orderBy := r.URL.Query().Get("order")
         nameQuery := r.URL.Query().Get("name")
@@ -158,7 +158,7 @@ func (h ActorsHandler) List(w http.ResponseWriter, r *http.Request) <span class=
                 http.Error(w, "failed to get actors", http.StatusInternalServerError)
                 return
         }</span>
-        <span class="cov0" title="0">data, err := json.Marshal(filteredActors)
+        <span class="cov8" title="1">data, err := json.Marshal(filteredActors)
         if err != nil </span><span class="cov0" title="0">{
                 log.Println(err)
                 http.Error(w, "failed to create response data", http.StatusInternalServerError)
@@ -166,7 +166,7 @@ func (h ActorsHandler) List(w http.ResponseWriter, r *http.Request) <span class=
         }</span>
 
         // если не передать content-type, то клиент воспримет контент как text/plain, а не json
-        <span class="cov0" title="0">w.Header().Add("Content-Type", "application/json")
+        <span class="cov8" title="1">w.Header().Add("Content-Type", "application/json")
         _, err = w.Write(data)
         if err != nil </span><span class="cov0" title="0">{
                 log.Println(err)
@@ -174,33 +174,33 @@ func (h ActorsHandler) List(w http.ResponseWriter, r *http.Request) <span class=
         }</span>
 }
 
-func (h ActorsHandler) Get(w http.ResponseWriter, r *http.Request) <span class="cov0" title="0">{
+func (h ActorsHandler) Get(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
         id, err := getID(w, r)
         if err != nil </span><span class="cov0" title="0">{
                 log.Println(err)
                 return
         }</span>
 
-        <span class="cov0" title="0">actor, err := h.Service.Get(id)
-        if err != nil </span><span class="cov0" title="0">{
+        <span class="cov8" title="1">actor, err := h.Service.Get(id)
+        if err != nil </span><span class="cov8" title="1">{
                 switch </span>{
-                case errors.Is(err, domain.ErrNotFound):<span class="cov0" title="0">
+                case errors.Is(err, domain.ErrNotFound):<span class="cov8" title="1">
                         http.Error(w, "actor not found", http.StatusNotFound)</span>
-                default:<span class="cov0" title="0">
+                default:<span class="cov8" title="1">
                         http.Error(w, "unexpected error", http.StatusInternalServerError)</span>
                 }
 
-                <span class="cov0" title="0">log.Println(err)
+                <span class="cov8" title="1">log.Println(err)
                 return</span>
         }
 
-        <span class="cov0" title="0">data, err := json.Marshal(actor)
+        <span class="cov8" title="1">data, err := json.Marshal(actor)
         if err != nil </span><span class="cov0" title="0">{
                 http.Error(w, "failed to create response data", http.StatusInternalServerError)
         }</span>
 
         // если не передать content-type, то клиент воспримет контент как text/plain, а не json
-        <span class="cov0" title="0">w.Header().Add("Content-Type", "application/json")
+        <span class="cov8" title="1">w.Header().Add("Content-Type", "application/json")
         _, err = w.Write(data)
         if err != nil </span><span class="cov0" title="0">{
                 log.Println(err)
@@ -252,27 +252,27 @@ func (h ActorsHandler) Update(w http.ResponseWriter, r *http.Request) <span clas
         }</span>
 }
 
-func (h ActorsHandler) Delete(w http.ResponseWriter, r *http.Request) <span class="cov0" title="0">{
+func (h ActorsHandler) Delete(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
         id, err := getID(w, r)
         if err != nil </span><span class="cov0" title="0">{
                 log.Println(err)
                 return
         }</span>
 
-        <span class="cov0" title="0">err = h.Service.Delete(id)
-        if err != nil </span><span class="cov0" title="0">{
+        <span class="cov8" title="1">err = h.Service.Delete(id)
+        if err != nil </span><span class="cov8" title="1">{
                 switch </span>{
-                case errors.Is(err, domain.ErrNotFound):<span class="cov0" title="0">
+                case errors.Is(err, domain.ErrNotFound):<span class="cov8" title="1">
                         http.Error(w, "actor not found", http.StatusNotFound)</span>
-                default:<span class="cov0" title="0">
+                default:<span class="cov8" title="1">
                         http.Error(w, "unexpected error", http.StatusInternalServerError)</span>
                 }
-                <span class="cov0" title="0">log.Println(err)
+                <span class="cov8" title="1">log.Println(err)
 
                 return</span>
         }
 
-        <span class="cov0" title="0">w.WriteHeader(http.StatusAccepted)</span>
+        <span class="cov8" title="1">w.WriteHeader(http.StatusAccepted)</span>
 }
 </pre>
 		
@@ -302,7 +302,7 @@ type MoviesHandler struct {
         Service MoviesService
 }
 
-func NewLaptopsHandler(service MoviesService) MoviesHandler <span class="cov0" title="0">{
+func NewMoviesHandler(service MoviesService) MoviesHandler <span class="cov8" title="1">{
         return MoviesHandler{
                 Service: service,
         }
@@ -332,13 +332,13 @@ func (h MoviesHandler) List(w http.ResponseWriter, r *http.Request) <span class=
         }</span>
 }
 
-func (h MoviesHandler) Create(w http.ResponseWriter, r *http.Request) <span class="cov0" title="0">{
-        if r.Header.Get("Content-Type") != "application/json" </span><span class="cov0" title="0">{
+func (h MoviesHandler) Create(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        if r.Header.Get("Content-Type") != "application/json" </span><span class="cov8" title="1">{
                 http.Error(w, "content type not allowed", http.StatusUnsupportedMediaType)
                 return
         }</span>
 
-        <span class="cov0" title="0">var newMovie domain.Movie
+        <span class="cov8" title="1">var newMovie domain.Movie
         err := json.NewDecoder(r.Body).Decode(&amp;newMovie)
         if err != nil </span><span class="cov0" title="0">{
                 http.Error(w, "failed to unmarshall data", http.StatusBadRequest)
@@ -346,29 +346,29 @@ func (h MoviesHandler) Create(w http.ResponseWriter, r *http.Request) <span clas
                 return
         }</span>
 
-        <span class="cov0" title="0">createdMovie, err := h.Service.Create(newMovie)
-        if err != nil </span><span class="cov0" title="0">{
+        <span class="cov8" title="1">createdMovie, err := h.Service.Create(newMovie)
+        if err != nil </span><span class="cov8" title="1">{
                 switch </span>{
-                case errors.Is(err, domain.ErrFieldsRequired):<span class="cov0" title="0">
+                case errors.Is(err, domain.ErrFieldsRequired):<span class="cov8" title="1">
                         http.Error(w, "all required fields must have values", http.StatusUnprocessableEntity)</span>
-                case errors.Is(err, domain.ErrExists):<span class="cov0" title="0">
+                case errors.Is(err, domain.ErrExists):<span class="cov8" title="1">
                         http.Error(w, "movie already exists", http.StatusConflict)</span>
-                default:<span class="cov0" title="0">
+                default:<span class="cov8" title="1">
                         http.Error(w, "unexpected error", http.StatusInternalServerError)</span>
                 }
-                <span class="cov0" title="0">log.Println(err)
+                <span class="cov8" title="1">log.Println(err)
 
                 return</span>
         }
 
-        <span class="cov0" title="0">data, err := json.Marshal(createdMovie)
+        <span class="cov8" title="1">data, err := json.Marshal(createdMovie)
         if err != nil </span><span class="cov0" title="0">{
                 http.Error(w, "failed to create response data", http.StatusInternalServerError)
                 log.Println(err)
                 return
         }</span>
 
-        <span class="cov0" title="0">w.Header().Add("Content-Type", "application/json")
+        <span class="cov8" title="1">w.Header().Add("Content-Type", "application/json")
         w.WriteHeader(http.StatusCreated)
         _, err = w.Write(data)
         if err != nil </span><span class="cov0" title="0">{
@@ -568,7 +568,7 @@ func (h MoviesHandler) CreateActorsForMovie(w http.ResponseWriter, r *http.Reque
         }</span>
 }
 
-func getID(w http.ResponseWriter, r *http.Request) (int, error) <span class="cov0" title="0">{
+func getID(w http.ResponseWriter, r *http.Request) (int, error) <span class="cov8" title="1">{
         idParam := chi.URLParam(r, "id")
         if idParam == "" </span><span class="cov0" title="0">{
                 log.Println("id required")
@@ -576,14 +576,14 @@ func getID(w http.ResponseWriter, r *http.Request) (int, error) <span class="cov
                 return 0, domain.ErrIDRequired
         }</span>
 
-        <span class="cov0" title="0">id, err := strconv.Atoi(idParam)
+        <span class="cov8" title="1">id, err := strconv.Atoi(idParam)
         if err != nil </span><span class="cov0" title="0">{
                 log.Println(err)
                 http.Error(w, "failed to parse id query param", http.StatusBadRequest)
                 return 0, err
         }</span>
 
-        <span class="cov0" title="0">return id, nil</span>
+        <span class="cov8" title="1">return id, nil</span>
 }
 </pre>
 		

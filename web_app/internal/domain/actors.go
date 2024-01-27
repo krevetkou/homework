@@ -13,7 +13,7 @@ type ActorUpdate struct {
 	Name           *string `json:"name,omitempty"`
 	BirthYear      *int    `json:"birth_year,omitempty"`
 	CountryOfBirth *string `json:"country_of_birth,omitempty"`
-	Sex            *string `json:"sex,omitempty"`
+	Gender         *string `json:"sex,omitempty"`
 }
 
 //{

@@ -24,7 +24,7 @@ type MoviesHandler struct {
 	Service MoviesService
 }
 
-func NewLaptopsHandler(service MoviesService) MoviesHandler {
+func NewMoviesHandler(service MoviesService) MoviesHandler {
 	return MoviesHandler{
 		Service: service,
 	}

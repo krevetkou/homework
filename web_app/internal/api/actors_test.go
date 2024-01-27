@@ -4,8 +4,11 @@ import (
 	"arch-demo/internal/domain"
 	mock_api "arch-demo/internal/tests/api_mocks"
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"github.com/go-chi/chi/v5"
 	"github.com/golang/mock/gomock"
 	"io"
 	"net/http"
@@ -13,7 +16,7 @@ import (
 	"testing"
 )
 
-func TestCreate(t *testing.T) {
+func TestCreateActor(t *testing.T) {
 	type fields struct {
 		name           string
 		birthYear      int
@@ -106,12 +109,7 @@ func TestCreate(t *testing.T) {
 				gender:         "gender",
 			},
 			mockInit: func(s *mock_api.MockActorsService) {
-				s.EXPECT().Create(gomock.Any()).Return(domain.Actor{
-					Name:           "name",
-					BirthYear:      1900,
-					CountryOfBirth: "cob",
-					Gender:         "gender",
-				}, domain.ErrFieldsRequired)
+				s.EXPECT().Create(gomock.Any()).Return(domain.Actor{}, domain.ErrFieldsRequired)
 			},
 			header: http.Header{
 				"Content-Type": []string{
@@ -175,8 +173,7 @@ func TestCreate(t *testing.T) {
 	}
 }
 
-func TestList(t *testing.T) {
-
+func TestListActors(t *testing.T) {
 	testCases := []struct {
 		name          string
 		mockInit      func(s *mock_api.MockActorsService)
@@ -246,8 +243,7 @@ func TestList(t *testing.T) {
 	}
 }
 
-func TestGet(t *testing.T) {
-
+func TestGetActor(t *testing.T) {
 	testCases := []struct {
 		name          string
 		mockInit      func(s *mock_api.MockActorsService)
@@ -275,6 +271,34 @@ func TestGet(t *testing.T) {
 			expStatusCode: http.StatusOK,
 			expErr:        false,
 		},
+		{
+			name: "get_actor_id_doesnt_exist",
+			mockInit: func(s *mock_api.MockActorsService) {
+				s.EXPECT().Get(1).Return(domain.Actor{}, domain.ErrNotFound).AnyTimes()
+			},
+			header: http.Header{
+				"Content-Type": []string{
+					"application/json",
+				},
+			},
+			expStatusCode: http.StatusNotFound,
+			expErrMessage: "actor not found\n",
+			expErr:        true,
+		},
+		{
+			name: "internal_error",
+			mockInit: func(s *mock_api.MockActorsService) {
+				s.EXPECT().Get(1).Return(domain.Actor{}, errors.New("unexpected error"))
+			},
+			header: http.Header{
+				"Content-Type": []string{
+					"application/json",
+				},
+			},
+			expStatusCode: http.StatusInternalServerError,
+			expErrMessage: "unexpected error\n",
+			expErr:        true,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -291,6 +315,10 @@ func TestGet(t *testing.T) {
 			req := httptest.NewRequest(http.MethodGet, "/api/", io.Reader(nil))
 			req.Header = tc.header
 			recorder := httptest.NewRecorder()
+
+			chiCtx := chi.NewRouteContext()
+			chiCtx.URLParams.Add("id", fmt.Sprintf("%v", 1))
+			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx))
 
 			h.Get(recorder, req)
 			if recorder.Result().StatusCode != tc.expStatusCode {
@@ -309,6 +337,164 @@ func TestGet(t *testing.T) {
 
 			var actor domain.Actor
 			_ = json.NewDecoder(recorder.Result().Body).Decode(&actor)
+
+		})
+	}
+}
+
+func TestUpdate(t *testing.T) {
+	type fields struct {
+		name           *string
+		birthYear      *int
+		countryOfBirth *string
+		gender         *string
+	}
+
+	testCases := []struct {
+		name          string
+		fields        fields
+		mockInit      func(s *mock_api.MockActorsService)
+		header        http.Header
+		expStatusCode int
+		expErrMessage string
+		expErr        bool
+	}{
+		{
+			name: "update_actors_success",
+			fields: fields{
+				countryOfBirth: toPtr("cob"),
+				gender:         toPtr("gender"),
+			},
+			mockInit: func(s *mock_api.MockActorsService) {
+				s.EXPECT().Update(1, domain.ActorUpdate{
+					CountryOfBirth: toPtr("cob"),
+					Gender:         toPtr("gender"),
+				}).Return(domain.Actor{
+					ID:             1,
+					Name:           "Name",
+					BirthYear:      1999,
+					CountryOfBirth: "cob",
+					Gender:         "gender",
+				}, nil).AnyTimes()
+			},
+			header: http.Header{
+				"Content-Type": []string{
+					"application/json",
+				},
+			},
+			expStatusCode: http.StatusOK,
+			expErr:        false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			s := mock_api.NewMockActorsService(ctrl)
+			if tc.mockInit != nil {
+				tc.mockInit(s)
+			}
+			h := NewActorsHandler(s)
+
+			req := httptest.NewRequest(http.MethodPost, "/api/", io.Reader(nil))
+			req.Header = tc.header
+			recorder := httptest.NewRecorder()
+
+			chiCtx := chi.NewRouteContext()
+			chiCtx.URLParams.Add("id", fmt.Sprintf("%v", 1))
+			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx))
+
+			h.Update(recorder, req)
+			if recorder.Result().StatusCode != tc.expStatusCode {
+				t.Errorf("expected status code: %d, got: %d", tc.expStatusCode, recorder.Result().StatusCode)
+			}
+
+			var actorTest domain.ActorUpdate
+			_ = json.NewDecoder(recorder.Result().Body).Decode(&actorTest)
+		})
+	}
+}
+
+func TestDeleteActor(t *testing.T) {
+	testCases := []struct {
+		name          string
+		mockInit      func(s *mock_api.MockActorsService)
+		header        http.Header
+		expStatusCode int
+		expErrMessage string
+		expErr        bool
+	}{
+		{
+			name: "delete_actor_success",
+			mockInit: func(s *mock_api.MockActorsService) {
+				s.EXPECT().Delete(1).Return(nil)
+			},
+			header: http.Header{
+				"Content-Type": []string{
+					"application/json",
+				},
+			},
+			expStatusCode: http.StatusAccepted,
+			expErr:        false,
+		},
+		{
+			name: "delete_actor_not_found",
+			mockInit: func(s *mock_api.MockActorsService) {
+				s.EXPECT().Delete(1).Return(domain.ErrNotFound)
+			},
+			header: http.Header{
+				"Content-Type": []string{
+					"application/json",
+				},
+			},
+			expStatusCode: http.StatusNotFound,
+			expErrMessage: "actor not found\n",
+			expErr:        true,
+		},
+		{
+			name: "delete_actor_unexpected_error",
+			mockInit: func(s *mock_api.MockActorsService) {
+				s.EXPECT().Delete(1).Return(errors.New("unexpected error"))
+			},
+			header: http.Header{
+				"Content-Type": []string{
+					"application/json",
+				},
+			},
+			expStatusCode: http.StatusInternalServerError,
+			expErrMessage: "unexpected error\n",
+			expErr:        true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			s := mock_api.NewMockActorsService(ctrl)
+			if tc.mockInit != nil {
+				tc.mockInit(s)
+			}
+			h := NewActorsHandler(s)
+
+			req := httptest.NewRequest(http.MethodDelete, "/api/", io.Reader(nil))
+			req.Header = tc.header
+			recorder := httptest.NewRecorder()
+
+			chiCtx := chi.NewRouteContext()
+			chiCtx.URLParams.Add("id", fmt.Sprintf("%v", 1))
+			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx))
+
+			h.Delete(recorder, req)
+			if recorder.Result().StatusCode != tc.expStatusCode {
+				t.Errorf("expected status code: %d, got: %d", tc.expStatusCode, recorder.Result().StatusCode)
+			}
+
+			var actorsTest []domain.Actor
+			_ = json.NewDecoder(recorder.Result().Body).Decode(&actorsTest)
 
 		})
 	}
