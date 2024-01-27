@@ -4,6 +4,7 @@ import (
 	"arch-demo/internal/domain"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/go-chi/chi/v5"
 	"log"
 	"net/http"
@@ -254,6 +255,7 @@ func (h MoviesHandler) CreateActorsForMovie(w http.ResponseWriter, r *http.Reque
 	}
 
 	var actorsForMovie []int
+	fmt.Println(r.Body)
 	err = json.NewDecoder(r.Body).Decode(&actorsForMovie)
 	if err != nil {
 		http.Error(w, "failed to unmarshall data", http.StatusBadRequest)

@@ -4,7 +4,6 @@ import (
 	"arch-demo/internal/domain"
 	"database/sql"
 	"errors"
-	"github.com/lib/pq"
 	"sort"
 	"strconv"
 	"strings"
@@ -154,7 +153,7 @@ func (s *StorageDB) GetActorsByMovie(id int) ([]domain.Actor, error) {
 		return []domain.Actor{}, err
 	}
 
-	rows, err := s.db.Query("select actors_ids from \"actorsInMovies\" where movie_id = $1", id)
+	rows, err := s.db.Query("select actor_id from \"actorsInMovies\" where movie_id = $1", id)
 	if err != nil {
 		return []domain.Actor{}, err
 	}
@@ -208,7 +207,7 @@ func (s *StorageDB) CreateActorsByMovie(id int, actors []int) (int, []int, error
 		return 0, []int{0}, err
 	}
 
-	rows, err := s.db.Query("insert into \"actorsInMovies\" (movie_id, actors_ids) values ($1, $2) returning movie_id, actors_ids")
+	rows, err := s.db.Query("insert into \"actorsInMovies\" (movie_id, actor_id) values ($1, $2) returning movie_id, actor_id")
 	if err != nil {
 		return 0, []int{0}, err
 	}
@@ -220,12 +219,13 @@ func (s *StorageDB) CreateActorsByMovie(id int, actors []int) (int, []int, error
 	}(rows)
 
 	var movieID int
+	var actorID int
 	var actorsIDs []int
 	for rows.Next() {
-		if err = rows.Scan(&movieID, pq.Array(&actorsIDs)); err != nil {
+		if err = rows.Scan(&movieID, &actorID); err != nil {
 			return 0, []int{0}, err
 		}
-
+		actorsIDs = append(actorsIDs, actorID)
 	}
 	if err = rows.Err(); err != nil {
 		return 0, []int{0}, err

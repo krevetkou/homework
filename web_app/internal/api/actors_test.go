@@ -183,7 +183,7 @@ func TestListActors(t *testing.T) {
 		expErr        bool
 	}{
 		{
-			name: "get_actors_success",
+			name: "list_actors_success",
 			mockInit: func(s *mock_api.MockActorsService) {
 				s.EXPECT().List(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]domain.Actor{
 					{
@@ -342,7 +342,7 @@ func TestGetActor(t *testing.T) {
 	}
 }
 
-func TestUpdate(t *testing.T) {
+func TestUpdateActor(t *testing.T) {
 	type fields struct {
 		name           *string
 		birthYear      *int
