@@ -398,7 +398,16 @@ func TestUpdate(t *testing.T) {
 			}
 			h := NewActorsHandler(s)
 
-			req := httptest.NewRequest(http.MethodPost, "/api/", io.Reader(nil))
+			payload := domain.Actor{
+				ID:             1,
+				Name:           "Name",
+				BirthYear:      1999,
+				CountryOfBirth: "cob",
+				Gender:         "gender",
+			}
+
+			body, _ := json.Marshal(payload)
+			req := httptest.NewRequest(http.MethodPost, "/api/", bytes.NewReader(body))
 			req.Header = tc.header
 			recorder := httptest.NewRecorder()
 
