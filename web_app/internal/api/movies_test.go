@@ -14,16 +14,15 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
 )
 
 func TestCreateMovie(t *testing.T) {
 	type fields struct {
 		name        string
-		releaseDate time.Time
+		releaseDate string
 		country     string
 		genre       string
-		rating      int8
+		rating      int
 	}
 
 	testCases := []struct {
@@ -82,7 +81,7 @@ func TestCreateMovie(t *testing.T) {
 			name: "success_create",
 			fields: fields{
 				name:        "Name",
-				releaseDate: time.Time{},
+				releaseDate: "01-02-1995",
 				country:     "Russia",
 				genre:       "Haha",
 				rating:      5,
@@ -90,7 +89,7 @@ func TestCreateMovie(t *testing.T) {
 			mockInit: func(s *mock_api.MockMoviesService) {
 				s.EXPECT().Create(gomock.Any()).Return(domain.Movie{
 					Name:        "Name",
-					ReleaseDate: time.Time{},
+					ReleaseDate: "01-02-1995",
 					Country:     "Russia",
 					Genre:       "Haha",
 					Rating:      5,
@@ -108,7 +107,7 @@ func TestCreateMovie(t *testing.T) {
 			name: "not_all_fields",
 			fields: fields{
 				name:        "Name",
-				releaseDate: time.Time{},
+				releaseDate: "01-02-1995",
 				country:     "Russia",
 				genre:       "Haha",
 			},
@@ -194,14 +193,14 @@ func TestListMovies(t *testing.T) {
 				s.EXPECT().List(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]domain.Movie{
 					{
 						Name:        "Name",
-						ReleaseDate: time.Time{},
+						ReleaseDate: "01-02-1995",
 						Country:     "Russia",
 						Genre:       "Haha",
 						Rating:      5,
 					},
 					{
 						Name:        "Name2",
-						ReleaseDate: time.Time{},
+						ReleaseDate: "01-02-1995",
 						Country:     "Poland",
 						Genre:       "Haha",
 						Rating:      3,
@@ -259,7 +258,7 @@ func TestGetMovie(t *testing.T) {
 			mockInit: func(s *mock_api.MockMoviesService) {
 				s.EXPECT().Get(1).Return(domain.Movie{
 					Name:        "Name",
-					ReleaseDate: time.Time{},
+					ReleaseDate: "01-02-1995",
 					Country:     "Russia",
 					Genre:       "Haha",
 					Rating:      5,
@@ -529,10 +528,10 @@ func TestGetActorsByMovie(t *testing.T) {
 func TestCreateActorsForMovie(t *testing.T) {
 	type fields struct {
 		name        string
-		releaseDate time.Time
+		releaseDate string
 		country     string
 		genre       string
-		rating      int8
+		rating      int
 	}
 
 	testCases := []struct {
@@ -561,7 +560,7 @@ func TestCreateActorsForMovie(t *testing.T) {
 			name:   "actors_already_exists",
 			fields: fields{},
 			mockInit: func(s *mock_api.MockMoviesService) {
-				s.EXPECT().CreateActorsForMovie(1, []int{1, 2, 3}).Return(1, []int{1, 2, 3}, domain.ErrNotFound).AnyTimes()
+				s.EXPECT().CreateActorsForMovie(1, gomock.Any()).Return(domain.ErrNotFound).AnyTimes()
 			},
 			header: http.Header{
 				"Content-Type": []string{
@@ -569,14 +568,14 @@ func TestCreateActorsForMovie(t *testing.T) {
 				},
 			},
 			expStatusCode: http.StatusNotFound,
-			expErrMessage: "actors not found\n",
+			expErrMessage: "movie not found\n",
 			expErr:        true,
 		},
 		{
 			name:   "internal_error",
 			fields: fields{},
 			mockInit: func(s *mock_api.MockMoviesService) {
-				s.EXPECT().Create(gomock.Any()).Return(domain.Movie{}, errors.New("unexpected error")).AnyTimes()
+				s.EXPECT().CreateActorsForMovie(1, gomock.Any()).Return(errors.New("unexpected error")).AnyTimes()
 			},
 			header: http.Header{
 				"Content-Type": []string{
@@ -591,19 +590,13 @@ func TestCreateActorsForMovie(t *testing.T) {
 			name: "success_create",
 			fields: fields{
 				name:        "Name",
-				releaseDate: time.Time{},
+				releaseDate: "01-02-1995",
 				country:     "Russia",
 				genre:       "Haha",
 				rating:      5,
 			},
 			mockInit: func(s *mock_api.MockMoviesService) {
-				s.EXPECT().Create(gomock.Any()).Return(domain.Movie{
-					Name:        "Name",
-					ReleaseDate: time.Time{},
-					Country:     "Russia",
-					Genre:       "Haha",
-					Rating:      5,
-				}, nil)
+				s.EXPECT().CreateActorsForMovie(1, gomock.Any()).Return(nil)
 			},
 			header: http.Header{
 				"Content-Type": []string{
@@ -612,26 +605,6 @@ func TestCreateActorsForMovie(t *testing.T) {
 			},
 			expStatusCode: http.StatusCreated,
 			expErr:        false,
-		},
-		{
-			name: "not_all_fields",
-			fields: fields{
-				name:        "Name",
-				releaseDate: time.Time{},
-				country:     "Russia",
-				genre:       "Haha",
-			},
-			mockInit: func(s *mock_api.MockMoviesService) {
-				s.EXPECT().Create(gomock.Any()).Return(domain.Movie{}, domain.ErrFieldsRequired)
-			},
-			header: http.Header{
-				"Content-Type": []string{
-					"application/json",
-				},
-			},
-			expStatusCode: http.StatusUnprocessableEntity,
-			expErrMessage: "all required fields must have values\n",
-			expErr:        true,
 		},
 	}
 
@@ -646,13 +619,7 @@ func TestCreateActorsForMovie(t *testing.T) {
 			}
 
 			h := NewMoviesHandler(s)
-			payload := domain.Movie{
-				Name:        tc.fields.name,
-				ReleaseDate: tc.fields.releaseDate,
-				Country:     tc.fields.country,
-				Genre:       tc.fields.genre,
-				Rating:      tc.fields.rating,
-			}
+			payload := []int{1, 2, 3}
 
 			body, _ := json.Marshal(payload)
 			req := httptest.NewRequest(http.MethodPost, "/api/", bytes.NewReader(body))
@@ -684,6 +651,100 @@ func TestCreateActorsForMovie(t *testing.T) {
 	}
 }
 
+func TestUpdateMovie(t *testing.T) {
+	type fields struct {
+		name        *string
+		releaseDate *string
+		country     *string
+		genre       *string
+		rating      *int
+	}
+
+	testCases := []struct {
+		name          string
+		fields        fields
+		mockInit      func(s *mock_api.MockMoviesService)
+		header        http.Header
+		expStatusCode int
+		expErrMessage string
+		expErr        bool
+	}{
+		{
+			name: "update_actors_success",
+			fields: fields{
+				name:        toPtr("Name2"),
+				releaseDate: toPtr("01-03-2022"),
+				country:     toPtr("England"),
+				genre:       toPtr("Hehe"),
+				rating:      toPtrInt(5),
+			},
+			mockInit: func(s *mock_api.MockMoviesService) {
+				s.EXPECT().Update(1, domain.MovieUpdate{
+					Name:        toPtr("Name2"),
+					ReleaseDate: toPtr("01-03-2022"),
+					Country:     toPtr("England"),
+					Genre:       toPtr("Hehe"),
+					Rating:      toPtrInt(5),
+				}).Return(domain.Movie{
+					Name:        "Name2",
+					ReleaseDate: "01-03-2022",
+					Country:     "England",
+					Genre:       "Hehe",
+					Rating:      5,
+				}, nil).AnyTimes()
+			},
+			header: http.Header{
+				"Content-Type": []string{
+					"application/json",
+				},
+			},
+			expStatusCode: http.StatusOK,
+			expErr:        false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			s := mock_api.NewMockMoviesService(ctrl)
+			if tc.mockInit != nil {
+				tc.mockInit(s)
+			}
+			h := NewMoviesHandler(s)
+
+			payload := domain.Movie{
+				Name:        "Name2",
+				ReleaseDate: "01-03-2022",
+				Country:     "England",
+				Genre:       "Hehe",
+				Rating:      5,
+			}
+
+			body, _ := json.Marshal(payload)
+			req := httptest.NewRequest(http.MethodPost, "/api/", bytes.NewReader(body))
+			req.Header = tc.header
+			recorder := httptest.NewRecorder()
+
+			chiCtx := chi.NewRouteContext()
+			chiCtx.URLParams.Add("id", fmt.Sprintf("%v", 1))
+			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx))
+
+			h.Update(recorder, req)
+			if recorder.Result().StatusCode != tc.expStatusCode {
+				t.Errorf("expected status code: %d, got: %d", tc.expStatusCode, recorder.Result().StatusCode)
+			}
+
+			var movieTest domain.MovieUpdate
+			_ = json.NewDecoder(recorder.Result().Body).Decode(&movieTest)
+		})
+	}
+}
+
 func toPtr(str string) *string {
 	return &str
+}
+func toPtrInt(i int) *int {
+	return &i
 }

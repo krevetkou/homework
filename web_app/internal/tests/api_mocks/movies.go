@@ -50,13 +50,11 @@ func (mr *MockMoviesServiceMockRecorder) Create(actor interface{}) *gomock.Call 
 }
 
 // CreateActorsForMovie mocks base method.
-func (m *MockMoviesService) CreateActorsForMovie(id int, actorsByMovie []int) (int, []int, error) {
+func (m *MockMoviesService) CreateActorsForMovie(id int, actorsByMovie []int) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateActorsForMovie", id, actorsByMovie)
-	ret0, _ := ret[0].(int)
-	ret1, _ := ret[1].([]int)
-	ret2, _ := ret[2].(error)
-	return ret0, ret1, ret2
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
 // CreateActorsForMovie indicates an expected call of CreateActorsForMovie.

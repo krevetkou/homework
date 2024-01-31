@@ -9,14 +9,14 @@ import (
 
 type MoviesRepository interface {
 	InsertMovie(actor domain.Movie) (domain.Movie, error)
-	IsMovieExists(actor domain.Movie) (bool, error)
+	IsMovieExists(actor domain.Movie) error
 	GetMovieByID(id int) (domain.Movie, error)
 	UpdateMovie(actor domain.Movie) error
 	DeleteMovie(id int) error
 	GetAllMovies() ([]domain.Movie, error)
 	SortAndOrderByMovie(sortBy, orderBy string, movies []domain.Movie) []domain.Movie
 	GetActorsByMovie(id int) ([]domain.Actor, error)
-	CreateActorsByMovie(id int, actors []int) (int, []int, error)
+	CreateActorsByMovie(id int, actors []int) error
 }
 
 type MoviesService struct {
@@ -31,14 +31,14 @@ func NewMovieService(storage MoviesRepository) MoviesService {
 
 func (s MoviesService) Create(movie domain.Movie) (domain.Movie, error) {
 	// входящие параметры необходимо валидировать
-	if movie.Name == "" || movie.ReleaseDate.String() == "" ||
+	if movie.Name == "" || movie.ReleaseDate == "" ||
 		movie.Country == "" || movie.Genre == "" || movie.Rating == 0 {
 		return domain.Movie{}, domain.ErrFieldsRequired
 	}
 
 	newMovie, err := s.Storage.InsertMovie(movie)
 	if err != nil {
-		return domain.Movie{}, domain.ErrExists
+		return domain.Movie{}, err
 	}
 
 	return newMovie, nil
@@ -83,7 +83,10 @@ func (s MoviesService) Update(id int, movieUpdate domain.MovieUpdate) (domain.Mo
 		movie.Rating = *movieUpdate.Rating
 	}
 
-	s.Storage.UpdateMovie(movie)
+	err = s.Storage.UpdateMovie(movie)
+	if err != nil {
+		return domain.Movie{}, err
+	}
 
 	return movie, nil
 }
@@ -152,14 +155,12 @@ func (s MoviesService) GetActorsByMovie(id int) ([]domain.Actor, error) {
 	return actors, nil
 }
 
-func (s MoviesService) CreateActorsForMovie(id int, actorsByMovie []int) (int, []int, error) {
-	var movieID int
-	var actorsIDs []int
-	movieID, actorsIDs, err := s.Storage.CreateActorsByMovie(id, actorsByMovie)
+func (s MoviesService) CreateActorsForMovie(id int, actorsByMovie []int) error {
+	err := s.Storage.CreateActorsByMovie(id, actorsByMovie)
 
 	if err != nil {
-		return 0, []int{0}, err
+		return err
 	}
 
-	return movieID, actorsIDs, nil
+	return nil
 }

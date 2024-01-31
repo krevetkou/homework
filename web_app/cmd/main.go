@@ -13,7 +13,7 @@ import (
 )
 
 func main() {
-	dbCon, err := sql.Open("pgx", "postgres://postgres:356597@localhost:5432/test_db")
+	dbCon, err := sql.Open("pgx", "postgres://postgres:356597@localhost:5432/postgres")
 	if err != nil {
 		log.Println(err)
 		return

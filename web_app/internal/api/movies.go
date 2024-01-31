@@ -4,7 +4,6 @@ import (
 	"arch-demo/internal/domain"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/go-chi/chi/v5"
 	"log"
 	"net/http"
@@ -18,7 +17,7 @@ type MoviesService interface {
 	Update(id int, actorUpdate domain.MovieUpdate) (domain.Movie, error)
 	List(orderBy, sortBy, nameQuery, genreQuery string) []domain.Movie
 	GetActorsByMovie(id int) ([]domain.Actor, error)
-	CreateActorsForMovie(id int, actorsByMovie []int) (int, []int, error)
+	CreateActorsForMovie(id int, actorsByMovie []int) error
 }
 
 type MoviesHandler struct {
@@ -255,7 +254,6 @@ func (h MoviesHandler) CreateActorsForMovie(w http.ResponseWriter, r *http.Reque
 	}
 
 	var actorsForMovie []int
-	fmt.Println(r.Body)
 	err = json.NewDecoder(r.Body).Decode(&actorsForMovie)
 	if err != nil {
 		http.Error(w, "failed to unmarshall data", http.StatusBadRequest)
@@ -263,12 +261,11 @@ func (h MoviesHandler) CreateActorsForMovie(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	var actorsIDs []int
-	_, actorsIDs, err = h.Service.CreateActorsForMovie(id, actorsForMovie)
+	err = h.Service.CreateActorsForMovie(id, actorsForMovie)
 	if err != nil {
 		switch {
 		case errors.Is(err, domain.ErrNotFound):
-			http.Error(w, "actors not found", http.StatusNotFound)
+			http.Error(w, "movie not found", http.StatusNotFound)
 		default:
 			http.Error(w, "unexpected error", http.StatusInternalServerError)
 		}
@@ -277,7 +274,7 @@ func (h MoviesHandler) CreateActorsForMovie(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	data, err := json.Marshal(actorsIDs)
+	data, err := json.Marshal(actorsForMovie)
 	if err != nil {
 		http.Error(w, "failed to create response data", http.StatusInternalServerError)
 	}

@@ -362,13 +362,15 @@ func TestUpdateActor(t *testing.T) {
 		{
 			name: "update_actors_success",
 			fields: fields{
+				name:           toPtr("Name"),
+				birthYear:      toPtrInt(1999),
 				countryOfBirth: toPtr("cob"),
-				gender:         toPtr("gender"),
 			},
 			mockInit: func(s *mock_api.MockActorsService) {
 				s.EXPECT().Update(1, domain.ActorUpdate{
+					Name:           toPtr("Name"),
+					BirthYear:      toPtrInt(1999),
 					CountryOfBirth: toPtr("cob"),
-					Gender:         toPtr("gender"),
 				}).Return(domain.Actor{
 					ID:             1,
 					Name:           "Name",

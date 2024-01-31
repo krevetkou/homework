@@ -55,9 +55,9 @@
 			<div id="nav">
 				<select id="files">
 				
-				<option value="file0">arch-demo/internal/api/actors.go (60.6%)</option>
+				<option value="file0">arch-demo/internal/api/actors.go (65.4%)</option>
 				
-				<option value="file1">arch-demo/internal/api/movies.go (36.1%)</option>
+				<option value="file1">arch-demo/internal/api/movies.go (66.1%)</option>
 				
 				</select>
 			</div>
@@ -237,14 +237,14 @@ func (h ActorsHandler) Update(w http.ResponseWriter, r *http.Request) <span clas
                 return</span>
         }
 
-        <span class="cov0" title="0">data, err := json.Marshal(updatedActor)
+        <span class="cov8" title="1">data, err := json.Marshal(updatedActor)
         if err != nil </span><span class="cov0" title="0">{
                 http.Error(w, "failed to create response data", http.StatusInternalServerError)
                 return
         }</span>
 
         // если не передать content-type, то клиент воспримет контент как text/plain, а не json
-        <span class="cov0" title="0">w.Header().Add("Content-Type", "application/json")
+        <span class="cov8" title="1">w.Header().Add("Content-Type", "application/json")
         _, err = w.Write(data)
         if err != nil </span><span class="cov0" title="0">{
                 log.Println(err)
@@ -295,7 +295,7 @@ type MoviesService interface {
         Update(id int, actorUpdate domain.MovieUpdate) (domain.Movie, error)
         List(orderBy, sortBy, nameQuery, genreQuery string) []domain.Movie
         GetActorsByMovie(id int) ([]domain.Actor, error)
-        CreateActorsForMovie(id int, actorsByMovie []int) (int, []int, error)
+        CreateActorsForMovie(id int, actorsByMovie []int) error
 }
 
 type MoviesHandler struct {
@@ -411,7 +411,7 @@ func (h MoviesHandler) Get(w http.ResponseWriter, r *http.Request) <span class="
         }</span>
 }
 
-func (h MoviesHandler) Update(w http.ResponseWriter, r *http.Request) <span class="cov0" title="0">{
+func (h MoviesHandler) Update(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
         id, err := getID(w, r)
         if err != nil </span><span class="cov0" title="0">{
                 log.Println(err)
@@ -419,7 +419,7 @@ func (h MoviesHandler) Update(w http.ResponseWriter, r *http.Request) <span clas
         }</span>
 
         // более короткая и удобная запись вместо io.ReadAll
-        <span class="cov0" title="0">var movieUpdate domain.MovieUpdate
+        <span class="cov8" title="1">var movieUpdate domain.MovieUpdate
         err = json.NewDecoder(r.Body).Decode(&amp;movieUpdate)
         if err != nil </span><span class="cov0" title="0">{
                 log.Println(err)
@@ -427,7 +427,7 @@ func (h MoviesHandler) Update(w http.ResponseWriter, r *http.Request) <span clas
                 return
         }</span>
 
-        <span class="cov0" title="0">updatedMovie, err := h.Service.Update(id, movieUpdate)
+        <span class="cov8" title="1">updatedMovie, err := h.Service.Update(id, movieUpdate)
         if err != nil </span><span class="cov0" title="0">{
                 switch </span>{
                 case errors.Is(err, domain.ErrNotFound):<span class="cov0" title="0">
@@ -440,13 +440,13 @@ func (h MoviesHandler) Update(w http.ResponseWriter, r *http.Request) <span clas
                 return</span>
         }
 
-        <span class="cov0" title="0">data, err := json.Marshal(updatedMovie)
+        <span class="cov8" title="1">data, err := json.Marshal(updatedMovie)
         if err != nil </span><span class="cov0" title="0">{
                 http.Error(w, "failed to create response data", http.StatusInternalServerError)
         }</span>
 
         // если не передать content-type, то клиент воспримет контент как text/plain, а не json
-        <span class="cov0" title="0">w.Header().Add("Content-Type", "application/json")
+        <span class="cov8" title="1">w.Header().Add("Content-Type", "application/json")
         _, err = w.Write(data)
         if err != nil </span><span class="cov0" title="0">{
                 log.Println(err)
@@ -477,33 +477,33 @@ func (h MoviesHandler) Delete(w http.ResponseWriter, r *http.Request) <span clas
         <span class="cov8" title="1">w.WriteHeader(http.StatusAccepted)</span>
 }
 
-func (h MoviesHandler) GetActors(w http.ResponseWriter, r *http.Request) <span class="cov0" title="0">{
+func (h MoviesHandler) GetActors(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
         id, err := getID(w, r)
         if err != nil </span><span class="cov0" title="0">{
                 log.Println(err)
                 return
         }</span>
 
-        <span class="cov0" title="0">actorsByMovie, err := h.Service.GetActorsByMovie(id)
-        if err != nil </span><span class="cov0" title="0">{
+        <span class="cov8" title="1">actorsByMovie, err := h.Service.GetActorsByMovie(id)
+        if err != nil </span><span class="cov8" title="1">{
                 switch </span>{
-                case errors.Is(err, domain.ErrNotFound):<span class="cov0" title="0">
+                case errors.Is(err, domain.ErrNotFound):<span class="cov8" title="1">
                         http.Error(w, "actors not found", http.StatusNotFound)</span>
-                default:<span class="cov0" title="0">
+                default:<span class="cov8" title="1">
                         http.Error(w, "unexpected error", http.StatusInternalServerError)</span>
                 }
 
-                <span class="cov0" title="0">log.Println(err)
+                <span class="cov8" title="1">log.Println(err)
                 return</span>
         }
 
-        <span class="cov0" title="0">data, err := json.Marshal(actorsByMovie)
+        <span class="cov8" title="1">data, err := json.Marshal(actorsByMovie)
         if err != nil </span><span class="cov0" title="0">{
                 http.Error(w, "failed to create response data", http.StatusInternalServerError)
         }</span>
 
         // если не передать content-type, то клиент воспримет контент как text/plain, а не json
-        <span class="cov0" title="0">w.Header().Add("Content-Type", "application/json")
+        <span class="cov8" title="1">w.Header().Add("Content-Type", "application/json")
         _, err = w.Write(data)
         if err != nil </span><span class="cov0" title="0">{
                 log.Println(err)
@@ -511,27 +511,27 @@ func (h MoviesHandler) GetActors(w http.ResponseWriter, r *http.Request) <span c
         }</span>
 }
 
-func (h MoviesHandler) CreateActorsForMovie(w http.ResponseWriter, r *http.Request) <span class="cov0" title="0">{
-        if r.Header.Get("Content-Type") != "application/json" </span><span class="cov0" title="0">{
+func (h MoviesHandler) CreateActorsForMovie(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        if r.Header.Get("Content-Type") != "application/json" </span><span class="cov8" title="1">{
                 http.Error(w, "content type not allowed", http.StatusUnsupportedMediaType)
                 return
         }</span>
 
-        <span class="cov0" title="0">idParam := chi.URLParam(r, "id")
+        <span class="cov8" title="1">idParam := chi.URLParam(r, "id")
         if idParam == "" </span><span class="cov0" title="0">{
                 log.Println("id required")
                 http.Error(w, "id required", http.StatusBadRequest)
                 return
         }</span>
 
-        <span class="cov0" title="0">id, err := strconv.Atoi(idParam)
+        <span class="cov8" title="1">id, err := strconv.Atoi(idParam)
         if err != nil </span><span class="cov0" title="0">{
                 log.Println(err)
                 http.Error(w, "failed to parse id query param", http.StatusBadRequest)
                 return
         }</span>
 
-        <span class="cov0" title="0">var actorsForMovie []int
+        <span class="cov8" title="1">var actorsForMovie []int
         err = json.NewDecoder(r.Body).Decode(&amp;actorsForMovie)
         if err != nil </span><span class="cov0" title="0">{
                 http.Error(w, "failed to unmarshall data", http.StatusBadRequest)
@@ -539,27 +539,26 @@ func (h MoviesHandler) CreateActorsForMovie(w http.ResponseWriter, r *http.Reque
                 return
         }</span>
 
-        <span class="cov0" title="0">var actorsIDs []int
-        _, actorsIDs, err = h.Service.CreateActorsForMovie(id, actorsForMovie)
-        if err != nil </span><span class="cov0" title="0">{
+        <span class="cov8" title="1">err = h.Service.CreateActorsForMovie(id, actorsForMovie)
+        if err != nil </span><span class="cov8" title="1">{
                 switch </span>{
-                case errors.Is(err, domain.ErrNotFound):<span class="cov0" title="0">
-                        http.Error(w, "actors not found", http.StatusNotFound)</span>
-                default:<span class="cov0" title="0">
+                case errors.Is(err, domain.ErrNotFound):<span class="cov8" title="1">
+                        http.Error(w, "movie not found", http.StatusNotFound)</span>
+                default:<span class="cov8" title="1">
                         http.Error(w, "unexpected error", http.StatusInternalServerError)</span>
                 }
-                <span class="cov0" title="0">log.Println(err)
+                <span class="cov8" title="1">log.Println(err)
 
                 return</span>
         }
 
-        <span class="cov0" title="0">data, err := json.Marshal(actorsIDs)
+        <span class="cov8" title="1">data, err := json.Marshal(actorsForMovie)
         if err != nil </span><span class="cov0" title="0">{
                 http.Error(w, "failed to create response data", http.StatusInternalServerError)
         }</span>
 
         // если не передать content-type, то клиент воспримет контент как text/plain, а не json
-        <span class="cov0" title="0">w.Header().Add("Content-Type", "application/json")
+        <span class="cov8" title="1">w.Header().Add("Content-Type", "application/json")
         w.WriteHeader(http.StatusCreated)
         _, err = w.Write(data)
         if err != nil </span><span class="cov0" title="0">{
