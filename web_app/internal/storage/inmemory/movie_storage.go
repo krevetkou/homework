@@ -99,11 +99,11 @@ func (s *Storage) SortAndOrderByMovie(sortBy, orderBy string, movies []domain.Mo
 	case sortBy == "date":
 		if orderBy == "" || orderBy == "asc" {
 			sort.Slice(movies, func(i, j int) bool {
-				return movies[i].ReleaseDate.Before(movies[j].ReleaseDate)
+				return movies[i].ReleaseDate < movies[j].ReleaseDate
 			})
 		} else {
 			sort.Slice(movies, func(i, j int) bool {
-				return movies[i].ReleaseDate.After(movies[j].ReleaseDate)
+				return movies[i].ReleaseDate > movies[j].ReleaseDate
 			})
 		}
 	}

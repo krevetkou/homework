@@ -26,6 +26,8 @@ func NewActorsHandler(service ActorsService) ActorsHandler {
 	}
 }
 
+//go:generate mockgen -source actors.go -destination ../tests/api_mocks/users.go apimocks
+
 func (h ActorsHandler) Create(w http.ResponseWriter, r *http.Request) {
 	// необходимо удостоверится, что в запросе контент нужного типа
 	if r.Header.Get("Content-Type") != "application/json" {

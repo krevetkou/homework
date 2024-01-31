@@ -68,7 +68,7 @@ func (s *StorageDB) DeleteActor(id int) error {
 }
 
 func (s *StorageDB) UpdateActor(actorUpdate domain.Actor) error {
-	query := `update users set name = $1, birth_year = $2, country_of_birth = $3, gender = $4 where id = $5;`
+	query := `update actors set name = $1, birth_year = $2, country_of_birth = $3, gender = $4 where id = $5;`
 	_, err := s.db.Exec(query, actorUpdate.Name, actorUpdate.BirthYear, actorUpdate.CountryOfBirth, actorUpdate.Gender, actorUpdate.ID)
 	if err != nil {
 		return err

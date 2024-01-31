@@ -13,7 +13,7 @@ import (
 )
 
 func main() {
-	dbCon, err := sql.Open("pgx", "postgres://postgres:356597@localhost:5432/test_db")
+	dbCon, err := sql.Open("pgx", "postgres://postgres:356597@localhost:5432/postgres")
 	if err != nil {
 		log.Println(err)
 		return
@@ -28,7 +28,7 @@ func main() {
 	actorsService := services.NewActorService(dbStorage)
 	actorsHandler := api.NewActorsHandler(actorsService)
 	moviesService := services.NewMovieService(dbStorage)
-	moviesHandler := api.NewLaptopsHandler(moviesService)
+	moviesHandler := api.NewMoviesHandler(moviesService)
 
 	r := chi.NewRouter()
 	r.Route("/", func(r chi.Router) {

@@ -17,19 +17,20 @@ type MoviesService interface {
 	Update(id int, actorUpdate domain.MovieUpdate) (domain.Movie, error)
 	List(orderBy, sortBy, nameQuery, genreQuery string) []domain.Movie
 	GetActorsByMovie(id int) ([]domain.Actor, error)
-	CreateActorsForMovie(id int, actorsByMovie []int) (int, []int, error)
+	CreateActorsForMovie(id int, actorsByMovie []int) error
 }
 
 type MoviesHandler struct {
 	Service MoviesService
 }
 
-func NewLaptopsHandler(service MoviesService) MoviesHandler {
+func NewMoviesHandler(service MoviesService) MoviesHandler {
 	return MoviesHandler{
 		Service: service,
 	}
 }
 
+//go:generate mockgen -source movies.go -destination ../tests/api_mocks/movies.go apimocks
 func (h MoviesHandler) List(w http.ResponseWriter, r *http.Request) {
 	SortBy := r.URL.Query().Get("sort")
 	OrderBy := r.URL.Query().Get("order")
@@ -260,12 +261,11 @@ func (h MoviesHandler) CreateActorsForMovie(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	var actorsIDs []int
-	_, actorsIDs, err = h.Service.CreateActorsForMovie(id, actorsForMovie)
+	err = h.Service.CreateActorsForMovie(id, actorsForMovie)
 	if err != nil {
 		switch {
 		case errors.Is(err, domain.ErrNotFound):
-			http.Error(w, "actors not found", http.StatusNotFound)
+			http.Error(w, "movie not found", http.StatusNotFound)
 		default:
 			http.Error(w, "unexpected error", http.StatusInternalServerError)
 		}
@@ -274,7 +274,7 @@ func (h MoviesHandler) CreateActorsForMovie(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	data, err := json.Marshal(actorsIDs)
+	data, err := json.Marshal(actorsForMovie)
 	if err != nil {
 		http.Error(w, "failed to create response data", http.StatusInternalServerError)
 	}
